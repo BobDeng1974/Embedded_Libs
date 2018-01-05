@@ -1,6 +1,6 @@
 /**	
  * |----------------------------------------------------------------------
- * | Copyright (c) 2016 Tilen Majerle
+ * | Copyright (c) 2017 Tilen Majerle
  * |  
  * | Permission is hereby granted, free of charge, to any person
  * | obtaining a copy of this software and associated documentation
@@ -400,7 +400,7 @@ void TM_USART_Puts(USART_TypeDef* USARTx, char* str) {
 	}
 }
 
-void TM_USART_Send(USART_TypeDef* USARTx, const uint8_t* DataArray, uint16_t count) {
+void TM_USART_Send(USART_TypeDef* USARTx, uint8_t* DataArray, uint32_t count) {
 	/* Go through entire data array */
 	while (count--) {
 		/* Wait to be ready, buffer empty */
@@ -865,23 +865,23 @@ void TM_USART8_InitPins(TM_USART_PinsPack_t pinspack) {
 #endif
 
 /* Interrupt handlers */
-//#ifdef USART1
-//void USART1_IRQHandler(void) {
-//	/* Check if interrupt was because data is received */
-//	if (USART1->USART_STATUS_REG & USART_ISR_RXNE) {
-//#ifdef TM_USART1_USE_CUSTOM_IRQ
-//		/* Call user function */
-//		TM_USART1_ReceiveHandler(USART_READ_DATA(USART1));
-//#else
-//		/* Put received data into internal buffer */
-//		TM_USART_INT_InsertToBuffer(&TM_USART1, USART_READ_DATA(USART1));
-//#endif
-//	}
-//	
-//	/* Clear all USART flags */
-//	TM_USART_INT_ClearAllFlags(USART1, IRQ_USART1);
-//}
-//#endif
+#ifdef USART1
+void USART1_IRQHandler(void) {
+	/* Check if interrupt was because data is received */
+	if (USART1->USART_STATUS_REG & USART_ISR_RXNE) {
+#ifdef TM_USART1_USE_CUSTOM_IRQ
+		/* Call user function */
+		TM_USART1_ReceiveHandler(USART_READ_DATA(USART1));
+#else
+		/* Put received data into internal buffer */
+		TM_USART_INT_InsertToBuffer(&TM_USART1, USART_READ_DATA(USART1));
+#endif
+	}
+	
+	/* Clear all USART flags */
+	TM_USART_INT_ClearAllFlags(USART1, IRQ_USART1);
+}
+#endif
 
 #ifdef USART2
 void USART2_IRQHandler(void) {
@@ -937,23 +937,23 @@ void UART4_IRQHandler(void) {
 }
 #endif
 
-//#ifdef UART5
-//void UART5_IRQHandler(void) {
-//	/* Check if interrupt was because data is received */
-//	if (UART5->USART_STATUS_REG & USART_ISR_RXNE) {
-//#ifdef TM_UART5_USE_CUSTOM_IRQ
-//		/* Call user function */
-//		TM_UART5_ReceiveHandler(USART_READ_DATA(UART5));
-//#else
-//		/* Put received data into internal buffer */
-//		TM_USART_INT_InsertToBuffer(&TM_UART5, USART_READ_DATA(UART5));
-//#endif
-//	}
-//	
-//	/* Clear all USART flags */
-//	TM_USART_INT_ClearAllFlags(UART5, IRQ_UART5);
-//}
-//#endif
+#ifdef UART5
+void UART5_IRQHandler(void) {
+	/* Check if interrupt was because data is received */
+	if (UART5->USART_STATUS_REG & USART_ISR_RXNE) {
+#ifdef TM_UART5_USE_CUSTOM_IRQ
+		/* Call user function */
+		TM_UART5_ReceiveHandler(USART_READ_DATA(UART5));
+#else
+		/* Put received data into internal buffer */
+		TM_USART_INT_InsertToBuffer(&TM_UART5, USART_READ_DATA(UART5));
+#endif
+	}
+	
+	/* Clear all USART flags */
+	TM_USART_INT_ClearAllFlags(UART5, IRQ_UART5);
+}
+#endif
 
 #ifdef USART6
 void USART6_IRQHandler(void) {

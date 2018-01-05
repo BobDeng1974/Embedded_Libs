@@ -2,6 +2,8 @@
   ******************************************************************************
   * @file    stm32f7xx_hal_dfsdm.c
   * @author  MCD Application Team
+  * @version V1.2.2
+  * @date    14-April-2017
   * @brief   This file provides firmware functions to manage the following 
   *          functionalities of the Digital Filter for Sigma-Delta Modulators
   *          (DFSDM) peripherals:
@@ -204,9 +206,27 @@
 /** @defgroup DFSDM_Private_Define DFSDM Private Define
  * @{
  */
-
+#define DFSDM_CHCFGR1_CLK_DIV_OFFSET POSITION_VAL(DFSDM_CHCFGR1_CKOUTDIV)
+#define DFSDM_CHAWSCDR_BKSCD_OFFSET     POSITION_VAL(DFSDM_CHAWSCDR_BKSCD)
+#define DFSDM_CHAWSCDR_FOSR_OFFSET      POSITION_VAL(DFSDM_CHAWSCDR_AWFOSR)
+#define DFSDM_CHCFGR2_OFFSET_OFFSET  POSITION_VAL(DFSDM_CHCFGR2_OFFSET)
+#define DFSDM_CHCFGR2_DTRBS_OFFSET   POSITION_VAL(DFSDM_CHCFGR2_DTRBS)
+#define DFSDM_FLTFCR_FOSR_OFFSET        POSITION_VAL(DFSDM_FLTFCR_FOSR)
 #define DFSDM_FLTCR1_MSB_RCH_OFFSET     8
-
+#define DFSDM_FLTCR2_EXCH_OFFSET        POSITION_VAL(DFSDM_FLTCR2_EXCH)
+#define DFSDM_FLTCR2_AWDCH_OFFSET       POSITION_VAL(DFSDM_FLTCR2_AWDCH)
+#define DFSDM_FLTISR_CKABF_OFFSET       POSITION_VAL(DFSDM_FLTISR_CKABF)
+#define DFSDM_FLTISR_SCDF_OFFSET        POSITION_VAL(DFSDM_FLTISR_SCDF)
+#define DFSDM_FLTICR_CLRCKABF_OFFSET    POSITION_VAL(DFSDM_FLTICR_CLRCKABF)
+#define DFSDM_FLTICR_CLRSCDF_OFFSET     POSITION_VAL(DFSDM_FLTICR_CLRSCSDF)
+#define DFSDM_FLTRDATAR_DATA_OFFSET     POSITION_VAL(DFSDM_FLTRDATAR_RDATA)
+#define DFSDM_FLTJDATAR_DATA_OFFSET     POSITION_VAL(DFSDM_FLTJDATAR_JDATA)
+#define DFSDM_FLTAWHTR_THRESHOLD_OFFSET POSITION_VAL(DFSDM_FLTAWHTR_AWHT)
+#define DFSDM_FLTAWLTR_THRESHOLD_OFFSET POSITION_VAL(DFSDM_FLTAWLTR_AWLT)
+#define DFSDM_FLTEXMAX_DATA_OFFSET      POSITION_VAL(DFSDM_FLTEXMAX_EXMAX)
+#define DFSDM_FLTEXMIN_DATA_OFFSET      POSITION_VAL(DFSDM_FLTEXMIN_EXMIN)
+#define DFSDM_FLTCNVTIMR_DATA_OFFSET    POSITION_VAL(DFSDM_FLTCNVTIMR_CNVCNT)
+#define DFSDM_FLTAWSR_HIGH_OFFSET       POSITION_VAL(DFSDM_FLTAWSR_AWHTF)
 #define DFSDM_MSB_MASK               0xFFFF0000U
 #define DFSDM_LSB_MASK               0x0000FFFFU
 #define DFSDM_CKAB_TIMEOUT           5000U
@@ -318,7 +338,7 @@ HAL_StatusTypeDef HAL_DFSDM_ChannelInit(DFSDM_Channel_HandleTypeDef *hdfsdm_chan
       assert_param(IS_DFSDM_CHANNEL_OUTPUT_CLOCK_DIVIDER(hdfsdm_channel->Init.OutputClock.Divider));
       /* Set the output clock divider */
       DFSDM1_Channel0->CHCFGR1 |= (uint32_t) ((hdfsdm_channel->Init.OutputClock.Divider - 1) << 
-                                             DFSDM_CHCFGR1_CKOUTDIV_Pos);
+                                             DFSDM_CHCFGR1_CLK_DIV_OFFSET);
     }
     
     /* enable the DFSDM global interface */
@@ -340,12 +360,12 @@ HAL_StatusTypeDef HAL_DFSDM_ChannelInit(DFSDM_Channel_HandleTypeDef *hdfsdm_chan
   /* Set analog watchdog parameters */
   hdfsdm_channel->Instance->CHAWSCDR &= ~(DFSDM_CHAWSCDR_AWFORD | DFSDM_CHAWSCDR_AWFOSR);
   hdfsdm_channel->Instance->CHAWSCDR |= (hdfsdm_channel->Init.Awd.FilterOrder | 
-                                       ((hdfsdm_channel->Init.Awd.Oversampling - 1) << DFSDM_CHAWSCDR_AWFOSR_Pos));
+                                       ((hdfsdm_channel->Init.Awd.Oversampling - 1) << DFSDM_CHAWSCDR_FOSR_OFFSET));
 
   /* Set channel offset and right bit shift */
   hdfsdm_channel->Instance->CHCFGR2 &= ~(DFSDM_CHCFGR2_OFFSET | DFSDM_CHCFGR2_DTRBS);
-  hdfsdm_channel->Instance->CHCFGR2 |= (((uint32_t) hdfsdm_channel->Init.Offset << DFSDM_CHCFGR2_OFFSET_Pos) | 
-                                        (hdfsdm_channel->Init.RightBitShift << DFSDM_CHCFGR2_DTRBS_Pos));
+  hdfsdm_channel->Instance->CHCFGR2 |= (((uint32_t) hdfsdm_channel->Init.Offset << DFSDM_CHCFGR2_OFFSET_OFFSET) | 
+                                        (hdfsdm_channel->Init.RightBitShift << DFSDM_CHCFGR2_DTRBS_OFFSET));
 
   /* Enable DFSDM channel */
   hdfsdm_channel->Instance->CHCFGR1 |= DFSDM_CHCFGR1_CHEN;
@@ -488,9 +508,9 @@ HAL_StatusTypeDef HAL_DFSDM_ChannelCkabStart(DFSDM_Channel_HandleTypeDef *hdfsdm
     tickstart = HAL_GetTick();
 
     /* Clear clock absence flag */
-    while((((DFSDM1_Filter0->FLTISR & DFSDM_FLTISR_CKABF) >> (DFSDM_FLTISR_CKABF_Pos + channel)) & 1) != 0)
+    while((((DFSDM1_Filter0->FLTISR & DFSDM_FLTISR_CKABF) >> (DFSDM_FLTISR_CKABF_OFFSET + channel)) & 1) != 0)
     {
-      DFSDM1_Filter0->FLTICR = (1 << (DFSDM_FLTICR_CLRCKABF_Pos + channel));
+      DFSDM1_Filter0->FLTICR = (1 << (DFSDM_FLTICR_CLRCKABF_OFFSET + channel));
 
       /* Check the Timeout */
       if((HAL_GetTick()-tickstart) > DFSDM_CKAB_TIMEOUT)
@@ -541,7 +561,7 @@ HAL_StatusTypeDef HAL_DFSDM_ChannelPollForCkab(DFSDM_Channel_HandleTypeDef *hdfs
     tickstart = HAL_GetTick();
 
     /* Wait clock absence detection */
-    while((((DFSDM1_Filter0->FLTISR & DFSDM_FLTISR_CKABF) >> (DFSDM_FLTISR_CKABF_Pos + channel)) & 1) == 0)
+    while((((DFSDM1_Filter0->FLTISR & DFSDM_FLTISR_CKABF) >> (DFSDM_FLTISR_CKABF_OFFSET + channel)) & 1) == 0)
     {
       /* Check the Timeout */
       if(Timeout != HAL_MAX_DELAY)
@@ -555,7 +575,7 @@ HAL_StatusTypeDef HAL_DFSDM_ChannelPollForCkab(DFSDM_Channel_HandleTypeDef *hdfs
     }
     
     /* Clear clock absence detection flag */
-    DFSDM1_Filter0->FLTICR = (1 << (DFSDM_FLTICR_CLRCKABF_Pos + channel));
+    DFSDM1_Filter0->FLTICR = (1 << (DFSDM_FLTICR_CLRCKABF_OFFSET + channel));
     
     /* Return function status */
     return HAL_OK;
@@ -588,7 +608,7 @@ HAL_StatusTypeDef HAL_DFSDM_ChannelCkabStop(DFSDM_Channel_HandleTypeDef *hdfsdm_
     
     /* Clear clock absence flag */
     channel = DFSDM_GetChannelFromInstance(hdfsdm_channel->Instance);
-    DFSDM1_Filter0->FLTICR = (1 << (DFSDM_FLTICR_CLRCKABF_Pos + channel));
+    DFSDM1_Filter0->FLTICR = (1 << (DFSDM_FLTICR_CLRCKABF_OFFSET + channel));
   }
   /* Return function status */
   return status;
@@ -627,9 +647,9 @@ HAL_StatusTypeDef HAL_DFSDM_ChannelCkabStart_IT(DFSDM_Channel_HandleTypeDef *hdf
     tickstart = HAL_GetTick();
 
     /* Clear clock absence flag */
-    while((((DFSDM1_Filter0->FLTISR & DFSDM_FLTISR_CKABF) >> (DFSDM_FLTISR_CKABF_Pos + channel)) & 1) != 0)
+    while((((DFSDM1_Filter0->FLTISR & DFSDM_FLTISR_CKABF) >> (DFSDM_FLTISR_CKABF_OFFSET + channel)) & 1) != 0)
     {
-      DFSDM1_Filter0->FLTICR = (1 << (DFSDM_FLTICR_CLRCKABF_Pos + channel));
+      DFSDM1_Filter0->FLTICR = (1 << (DFSDM_FLTICR_CLRCKABF_OFFSET + channel));
 
       /* Check the Timeout */
       if((HAL_GetTick()-tickstart) > DFSDM_CKAB_TIMEOUT)
@@ -695,7 +715,7 @@ HAL_StatusTypeDef HAL_DFSDM_ChannelCkabStop_IT(DFSDM_Channel_HandleTypeDef *hdfs
     
     /* Clear clock absence flag */
     channel = DFSDM_GetChannelFromInstance(hdfsdm_channel->Instance);
-    DFSDM1_Filter0->FLTICR = (1 << (DFSDM_FLTICR_CLRCKABF_Pos + channel));
+    DFSDM1_Filter0->FLTICR = (1 << (DFSDM_FLTICR_CLRCKABF_OFFSET + channel));
 
     /* Disable clock absence detection interrupt */
     DFSDM1_Filter0->FLTCR2 &= ~(DFSDM_FLTCR2_CKABIE);
@@ -735,7 +755,7 @@ HAL_StatusTypeDef HAL_DFSDM_ChannelScdStart(DFSDM_Channel_HandleTypeDef *hdfsdm_
   {
     /* Configure threshold and break signals */
     hdfsdm_channel->Instance->CHAWSCDR &= ~(DFSDM_CHAWSCDR_BKSCD | DFSDM_CHAWSCDR_SCDT);
-    hdfsdm_channel->Instance->CHAWSCDR |= ((BreakSignal << DFSDM_CHAWSCDR_BKSCD_Pos) | \
+    hdfsdm_channel->Instance->CHAWSCDR |= ((BreakSignal << DFSDM_CHAWSCDR_BKSCD_OFFSET) | \
                                          Threshold);
     
     /* Start short circuit detection */
@@ -775,7 +795,7 @@ HAL_StatusTypeDef HAL_DFSDM_ChannelPollForScd(DFSDM_Channel_HandleTypeDef *hdfsd
     tickstart = HAL_GetTick();
 
     /* Wait short circuit detection */
-    while(((DFSDM1_Filter0->FLTISR & DFSDM_FLTISR_SCDF) >> (DFSDM_FLTISR_SCDF_Pos + channel)) == 0)
+    while(((DFSDM1_Filter0->FLTISR & DFSDM_FLTISR_SCDF) >> (DFSDM_FLTISR_SCDF_OFFSET + channel)) == 0)
     {
       /* Check the Timeout */
       if(Timeout != HAL_MAX_DELAY)
@@ -789,7 +809,7 @@ HAL_StatusTypeDef HAL_DFSDM_ChannelPollForScd(DFSDM_Channel_HandleTypeDef *hdfsd
     }
     
     /* Clear short circuit detection flag */
-    DFSDM1_Filter0->FLTICR = (1 << (DFSDM_FLTICR_CLRSCSDF_Pos + channel));
+    DFSDM1_Filter0->FLTICR = (1 << (DFSDM_FLTICR_CLRSCDF_OFFSET + channel));
     
     /* Return function status */
     return HAL_OK;
@@ -822,7 +842,7 @@ HAL_StatusTypeDef HAL_DFSDM_ChannelScdStop(DFSDM_Channel_HandleTypeDef *hdfsdm_c
     
     /* Clear short circuit detection flag */
     channel = DFSDM_GetChannelFromInstance(hdfsdm_channel->Instance);
-    DFSDM1_Filter0->FLTICR = (1 << (DFSDM_FLTICR_CLRSCSDF_Pos + channel));
+    DFSDM1_Filter0->FLTICR = (1 << (DFSDM_FLTICR_CLRSCDF_OFFSET + channel));
   }
   /* Return function status */
   return status;
@@ -862,7 +882,7 @@ HAL_StatusTypeDef HAL_DFSDM_ChannelScdStart_IT(DFSDM_Channel_HandleTypeDef *hdfs
 
     /* Configure threshold and break signals */
     hdfsdm_channel->Instance->CHAWSCDR &= ~(DFSDM_CHAWSCDR_BKSCD | DFSDM_CHAWSCDR_SCDT);
-    hdfsdm_channel->Instance->CHAWSCDR |= ((BreakSignal << DFSDM_CHAWSCDR_BKSCD_Pos) | \
+    hdfsdm_channel->Instance->CHAWSCDR |= ((BreakSignal << DFSDM_CHAWSCDR_BKSCD_OFFSET) | \
                                          Threshold);
     
     /* Start short circuit detection */
@@ -914,7 +934,7 @@ HAL_StatusTypeDef HAL_DFSDM_ChannelScdStop_IT(DFSDM_Channel_HandleTypeDef *hdfsd
     
     /* Clear short circuit detection flag */
     channel = DFSDM_GetChannelFromInstance(hdfsdm_channel->Instance);
-    DFSDM1_Filter0->FLTICR = (1 << (DFSDM_FLTICR_CLRSCSDF_Pos + channel));
+    DFSDM1_Filter0->FLTICR = (1 << (DFSDM_FLTICR_CLRSCDF_OFFSET + channel));
 
     /* Disable short circuit detection interrupt */
     DFSDM1_Filter0->FLTCR2 &= ~(DFSDM_FLTCR2_SCDIE);
@@ -959,7 +979,7 @@ HAL_StatusTypeDef HAL_DFSDM_ChannelModifyOffset(DFSDM_Channel_HandleTypeDef *hdf
   {
     /* Modify channel offset */
     hdfsdm_channel->Instance->CHCFGR2 &= ~(DFSDM_CHCFGR2_OFFSET);
-    hdfsdm_channel->Instance->CHCFGR2 |= ((uint32_t) Offset << DFSDM_CHCFGR2_OFFSET_Pos);
+    hdfsdm_channel->Instance->CHCFGR2 |= ((uint32_t) Offset << DFSDM_CHCFGR2_OFFSET_OFFSET);
   }
   /* Return function status */
   return status;
@@ -1104,7 +1124,7 @@ HAL_StatusTypeDef HAL_DFSDM_FilterInit(DFSDM_Filter_HandleTypeDef *hdfsdm_filter
   /* Set filter parameters */
   hdfsdm_filter->Instance->FLTFCR &= ~(DFSDM_FLTFCR_FORD | DFSDM_FLTFCR_FOSR | DFSDM_FLTFCR_IOSR);
   hdfsdm_filter->Instance->FLTFCR |= (hdfsdm_filter->Init.FilterParam.SincOrder |
-                                    ((hdfsdm_filter->Init.FilterParam.Oversampling - 1) << DFSDM_FLTFCR_FOSR_Pos) |
+                                    ((hdfsdm_filter->Init.FilterParam.Oversampling - 1) << DFSDM_FLTFCR_FOSR_OFFSET) |
                                   (hdfsdm_filter->Init.FilterParam.IntOversampling - 1));
 
   /* Store regular and injected triggers and injected scan mode*/
@@ -1714,7 +1734,7 @@ int32_t HAL_DFSDM_FilterGetRegularValue(DFSDM_Filter_HandleTypeDef *hdfsdm_filte
   
   /* Extract channel and regular conversion value */
   *Channel = (reg & DFSDM_FLTRDATAR_RDATACH);
-  value = ((int32_t)(reg & DFSDM_FLTRDATAR_RDATA) >> DFSDM_FLTRDATAR_RDATA_Pos);
+  value = ((reg & DFSDM_FLTRDATAR_RDATA) >> DFSDM_FLTRDATAR_DATA_OFFSET);
 
   /* return regular conversion value */
   return value;
@@ -2124,7 +2144,7 @@ int32_t HAL_DFSDM_FilterGetInjectedValue(DFSDM_Filter_HandleTypeDef *hdfsdm_filt
   
   /* Extract channel and injected conversion value */
   *Channel = (reg & DFSDM_FLTJDATAR_JDATACH);
-  value = ((int32_t)(reg & DFSDM_FLTJDATAR_JDATA) >> DFSDM_FLTJDATAR_JDATA_Pos);
+  value = ((reg & DFSDM_FLTJDATAR_JDATA) >> DFSDM_FLTJDATAR_DATA_OFFSET);
 
   /* return regular conversion value */
   return value;
@@ -2165,15 +2185,15 @@ HAL_StatusTypeDef HAL_DFSDM_FilterAwdStart_IT(DFSDM_Filter_HandleTypeDef   *hdfs
 
     /* Set thresholds and break signals */
     hdfsdm_filter->Instance->FLTAWHTR &= ~(DFSDM_FLTAWHTR_AWHT | DFSDM_FLTAWHTR_BKAWH);
-    hdfsdm_filter->Instance->FLTAWHTR |= (((uint32_t) awdParam->HighThreshold << DFSDM_FLTAWHTR_AWHT_Pos) | \
+    hdfsdm_filter->Instance->FLTAWHTR |= (((uint32_t) awdParam->HighThreshold << DFSDM_FLTAWHTR_THRESHOLD_OFFSET) | \
                                         awdParam->HighBreakSignal);
     hdfsdm_filter->Instance->FLTAWLTR &= ~(DFSDM_FLTAWLTR_AWLT | DFSDM_FLTAWLTR_BKAWL);
-    hdfsdm_filter->Instance->FLTAWLTR |= (((uint32_t) awdParam->LowThreshold << DFSDM_FLTAWLTR_AWLT_Pos) | \
+    hdfsdm_filter->Instance->FLTAWLTR |= (((uint32_t) awdParam->LowThreshold << DFSDM_FLTAWLTR_THRESHOLD_OFFSET) | \
                                         awdParam->LowBreakSignal);
 
     /* Set channels and interrupt for analog watchdog */
     hdfsdm_filter->Instance->FLTCR2 &= ~(DFSDM_FLTCR2_AWDCH);
-    hdfsdm_filter->Instance->FLTCR2 |= (((awdParam->Channel & DFSDM_LSB_MASK) << DFSDM_FLTCR2_AWDCH_Pos) | \
+    hdfsdm_filter->Instance->FLTCR2 |= (((awdParam->Channel & DFSDM_LSB_MASK) << DFSDM_FLTCR2_AWDCH_OFFSET) | \
                                         DFSDM_FLTCR2_AWDIE);
   }
   /* Return function status */
@@ -2245,7 +2265,7 @@ HAL_StatusTypeDef HAL_DFSDM_FilterExdStart(DFSDM_Filter_HandleTypeDef *hdfsdm_fi
   {
     /* Set channels for extreme detector */
     hdfsdm_filter->Instance->FLTCR2 &= ~(DFSDM_FLTCR2_EXCH);
-    hdfsdm_filter->Instance->FLTCR2 |= ((Channel & DFSDM_LSB_MASK) << DFSDM_FLTCR2_EXCH_Pos);
+    hdfsdm_filter->Instance->FLTCR2 |= ((Channel & DFSDM_LSB_MASK) << DFSDM_FLTCR2_EXCH_OFFSET);    
   }
   /* Return function status */
   return status;
@@ -2309,7 +2329,7 @@ int32_t HAL_DFSDM_FilterGetExdMaxValue(DFSDM_Filter_HandleTypeDef *hdfsdm_filter
   
   /* Extract channel and extreme detector maximum value */
   *Channel = (reg & DFSDM_FLTEXMAX_EXMAXCH);
-  value = ((int32_t)(reg & DFSDM_FLTEXMAX_EXMAX) >> DFSDM_FLTEXMAX_EXMAX_Pos);
+  value = ((reg & DFSDM_FLTEXMAX_EXMAX) >> DFSDM_FLTEXMAX_DATA_OFFSET);
 
   /* return extreme detector maximum value */
   return value;
@@ -2337,7 +2357,7 @@ int32_t HAL_DFSDM_FilterGetExdMinValue(DFSDM_Filter_HandleTypeDef *hdfsdm_filter
   
   /* Extract channel and extreme detector minimum value */
   *Channel = (reg & DFSDM_FLTEXMIN_EXMINCH);
-  value = ((int32_t)(reg & DFSDM_FLTEXMIN_EXMIN) >> DFSDM_FLTEXMIN_EXMIN_Pos);
+  value = ((reg & DFSDM_FLTEXMIN_EXMIN) >> DFSDM_FLTEXMIN_DATA_OFFSET);
 
   /* return extreme detector minimum value */
   return value;
@@ -2361,7 +2381,7 @@ uint32_t HAL_DFSDM_FilterGetConvTimeValue(DFSDM_Filter_HandleTypeDef *hdfsdm_fil
   reg = hdfsdm_filter->Instance->FLTCNVTIMR;
   
   /* Extract conversion time value */
-  value = ((reg & DFSDM_FLTCNVTIMR_CNVCNT) >> DFSDM_FLTCNVTIMR_CNVCNT_Pos);
+  value = ((reg & DFSDM_FLTCNVTIMR_CNVCNT) >> DFSDM_FLTCNVTIMR_DATA_OFFSET);
 
   /* return extreme detector minimum value */
   return value;
@@ -2458,7 +2478,7 @@ void HAL_DFSDM_IRQHandler(DFSDM_Filter_HandleTypeDef *hdfsdm_filter)
     threshold = ((reg & DFSDM_FLTAWSR_AWLTF) != 0) ? DFSDM_AWD_LOW_THRESHOLD : DFSDM_AWD_HIGH_THRESHOLD;
     if(threshold == DFSDM_AWD_HIGH_THRESHOLD)
     {
-      reg = reg >> DFSDM_FLTAWSR_AWHTF_Pos;
+      reg = reg >> DFSDM_FLTAWSR_HIGH_OFFSET;
     }
     while((reg & 1) == 0)
     {
@@ -2467,7 +2487,7 @@ void HAL_DFSDM_IRQHandler(DFSDM_Filter_HandleTypeDef *hdfsdm_filter)
     }
     /* Clear analog watchdog flag */
     hdfsdm_filter->Instance->FLTAWCFR = (threshold == DFSDM_AWD_HIGH_THRESHOLD) ? \
-                                        (1 << (DFSDM_FLTAWSR_AWHTF_Pos + channel)) : \
+                                        (1 << (DFSDM_FLTAWSR_HIGH_OFFSET + channel)) : \
                                      (1 << channel);
 
     /* Call analog watchdog callback */
@@ -2481,7 +2501,7 @@ void HAL_DFSDM_IRQHandler(DFSDM_Filter_HandleTypeDef *hdfsdm_filter)
     uint32_t reg = 0;
     uint32_t channel = 0;
     
-    reg = ((hdfsdm_filter->Instance->FLTISR & DFSDM_FLTISR_CKABF) >> DFSDM_FLTISR_CKABF_Pos);
+    reg = ((hdfsdm_filter->Instance->FLTISR & DFSDM_FLTISR_CKABF) >> DFSDM_FLTISR_CKABF_OFFSET);
 
     while(channel < DFSDM1_CHANNEL_NUMBER)
     {
@@ -2492,7 +2512,7 @@ void HAL_DFSDM_IRQHandler(DFSDM_Filter_HandleTypeDef *hdfsdm_filter)
         if((a_dfsdm1ChannelHandle[channel]->Instance->CHCFGR1 & DFSDM_CHCFGR1_CKABEN) != 0)
         {
           /* Clear clock absence flag */
-          hdfsdm_filter->Instance->FLTICR = (1 << (DFSDM_FLTICR_CLRCKABF_Pos + channel));
+          hdfsdm_filter->Instance->FLTICR = (1 << (DFSDM_FLTICR_CLRCKABF_OFFSET + channel));
 
           /* Call clock absence callback */
           HAL_DFSDM_ChannelCkabCallback(a_dfsdm1ChannelHandle[channel]);
@@ -2511,7 +2531,7 @@ void HAL_DFSDM_IRQHandler(DFSDM_Filter_HandleTypeDef *hdfsdm_filter)
     uint32_t channel = 0;
     
     /* Get channel */
-    reg = ((hdfsdm_filter->Instance->FLTISR & DFSDM_FLTISR_SCDF) >> DFSDM_FLTISR_SCDF_Pos);
+    reg = ((hdfsdm_filter->Instance->FLTISR & DFSDM_FLTISR_SCDF) >> DFSDM_FLTISR_SCDF_OFFSET);
     while((reg & 1) == 0)
     {
       channel++;
@@ -2519,7 +2539,7 @@ void HAL_DFSDM_IRQHandler(DFSDM_Filter_HandleTypeDef *hdfsdm_filter)
     }
     
     /* Clear short circuit detection flag */
-    hdfsdm_filter->Instance->FLTICR = (1 << (DFSDM_FLTICR_CLRSCSDF_Pos + channel));
+    hdfsdm_filter->Instance->FLTICR = (1 << (DFSDM_FLTICR_CLRSCDF_OFFSET + channel));
 
     /* Call short circuit detection callback */
     HAL_DFSDM_ChannelScdCallback(a_dfsdm1ChannelHandle[channel]);

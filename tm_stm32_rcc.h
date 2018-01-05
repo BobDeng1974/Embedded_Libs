@@ -1,8 +1,8 @@
 /** 
  * @author  Tilen Majerle
  * @email   tilen@majerle.eu
- * @website http://stm32f4-discovery.net
- * @link    http://stm32f4-discovery.net/2015/07/hal-library-01-rcc-for-stm32fxxx/
+ * @website http://stm32f4-discovery.com
+ * @link    http://stm32f4-discovery.com/2015/07/hal-library-01-rcc-for-stm32fxxx/
  * @version v1.1
  * @ide     Keil uVision
  * @license MIT
@@ -10,7 +10,7 @@
  *
 \verbatim
    ----------------------------------------------------------------------
-    Copyright (c) 2016 Tilen Majerle
+    Copyright (c) 2017 Tilen Majerle
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation
@@ -49,7 +49,7 @@ extern "C" {
 
 /**
  * @defgroup TM_RCC
- * @brief    RCC Library for STM32Fxxx - http://stm32f4-discovery.net/2015/07/hal-library-01-rcc-for-stm32fxxx/
+ * @brief    RCC Library for STM32Fxxx - http://stm32f4-discovery.com/2015/07/hal-library-01-rcc-for-stm32fxxx/
  * @{
  *
  * RCC library provides initialization of clock at the beginning. Function @ref TM_RCC_InitSystem should be called at beginning of @ref main function to initialize system.

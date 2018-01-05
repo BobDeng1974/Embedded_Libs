@@ -1,6 +1,6 @@
 /**	
  * |----------------------------------------------------------------------
- * | Copyright (c) 2016 Tilen Majerle
+ * | Copyright (c) 2017 Tilen Majerle
  * |  
  * | Permission is hereby granted, free of charge, to any person
  * | obtaining a copy of this software and associated documentation
@@ -155,12 +155,7 @@ uint8_t TM_GENERAL_DWTCounterEnable(void) {
     /* Enable TRC */
     CoreDebug->DEMCR &= ~0x01000000;
     CoreDebug->DEMCR |=  0x01000000;
-
-#if defined(STM32F7xx)
-    /* Unclock DWT timer */
-    DWT->LAR = 0xC5ACCE55;
-#endif
-
+	
     /* Enable counter */
     DWT->CTRL &= ~0x00000001;
     DWT->CTRL |=  0x00000001;

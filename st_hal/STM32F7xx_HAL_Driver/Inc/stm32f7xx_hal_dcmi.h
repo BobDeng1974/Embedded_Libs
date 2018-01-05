@@ -2,6 +2,8 @@
   ******************************************************************************
   * @file    stm32f7xx_hal_dcmi.h
   * @author  MCD Application Team
+  * @version V1.2.2
+  * @date    14-April-2017
   * @brief   Header file of DCMI HAL module.
   ******************************************************************************
   * @attention
@@ -503,6 +505,8 @@ void       HAL_DCMI_ErrorCallback(DCMI_HandleTypeDef *hdcmi);
 void       HAL_DCMI_LineEventCallback(DCMI_HandleTypeDef *hdcmi);
 void       HAL_DCMI_FrameEventCallback(DCMI_HandleTypeDef *hdcmi);
 void       HAL_DCMI_VsyncEventCallback(DCMI_HandleTypeDef *hdcmi);
+void       HAL_DCMI_VsyncCallback(DCMI_HandleTypeDef *hdcmi);
+void       HAL_DCMI_HsyncCallback(DCMI_HandleTypeDef *hdcmi);
 void       HAL_DCMI_IRQHandler(DCMI_HandleTypeDef *hdcmi);
 /**
   * @}

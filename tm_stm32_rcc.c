@@ -1,6 +1,6 @@
 /**	
  * |----------------------------------------------------------------------
- * | Copyright (c) 2016 Tilen Majerle
+ * | Copyright (c) 2017 Tilen Majerle
  * |  
  * | Permission is hereby granted, free of charge, to any person
  * | obtaining a copy of this software and associated documentation
@@ -77,7 +77,7 @@ TM_RCC_Result_t TM_RCC_InitSystem(void) {
 	RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ;
 #endif
 	
-#if defined(STM32F410Tx) || defined(STM32F410Cx) || defined(STM32F410Rx) || defined(STM32F446xx) || defined(STM32F469xx) || defined(STM32F479xx) 
+#if defined(STM32F410Tx) || defined(STM32F410Cx) || defined(STM32F410Rx) || defined(STM32F446xx) || defined(STM32F469xx) || defined(STM32F479xx) || defined(STM32F769xx)
 #if defined(RCC_PLLR)
 	RCC_OscInitStruct.PLL.PLLR = RCC_PLLR;
 #else
@@ -130,8 +130,10 @@ TM_RCC_Result_t TM_RCC_InitSystem(void) {
 	/* Try to init */
 #if defined(STM32F0xx)
 	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK) {
-#else
+#elif defined(STM32F7xx)
 	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_6) != HAL_OK) {
+#else
+	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_7) != HAL_OK) {
 #endif
 		return TM_RCC_Result_Error;
 	}

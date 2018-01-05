@@ -10,7 +10,7 @@
  *	
 \verbatim
    ----------------------------------------------------------------------
-    Copyright (c) 2016 Tilen Majerle
+    Copyright (c) 2017 Tilen Majerle
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation
@@ -133,10 +133,10 @@ extern "C" {
 typedef struct _TM_DELAY_Timer_t {
 	union {
 		struct {			
-			int AREN:1;                                 /*!< Auto-reload enabled */
-			int CNTEN:1;                                /*!< Count enabled */
+			uint8_t AREN:1;  /*!< Auto-reload enabled */
+			uint8_t CNTEN:1; /*!< Count enabled */
 		} F;
-		int FlagsVal;
+		uint8_t FlagsVal;
 	} Flags;
 	uint32_t ARR;                                        /*!< Auto reload value */
 	uint32_t CNT;                                        /*!< Counter value, counter counts down */
