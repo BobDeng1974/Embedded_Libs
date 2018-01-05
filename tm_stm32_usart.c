@@ -25,6 +25,31 @@
  */
 #include "tm_stm32_usart.h"
 
+#if defined(USART_DISABLE_USART1) && defined(USART1)
+#undef USART1
+#endif
+#if defined(USART_DISABLE_USART2) && defined(USART1)
+#undef USART2
+#endif
+#if defined(USART_DISABLE_USART3) && defined(USART1)
+#undef USART3
+#endif
+#if defined(USART_DISABLE_UART4) && defined(UART4)
+#undef UART4
+#endif
+#if defined(USART_DISABLE_UART5) && defined(UART5)
+#undef UART5
+#endif
+#if defined(USART_DISABLE_USART6) && defined(USART6)
+#undef SART6
+#endif
+#if defined(USART_DISABLE_UART7) && defined(UART7)
+#undef UART7
+#endif
+#if defined(USART_DISABLE_UART8) && defined(UART8)
+#undef UART8
+#endif
+
 /* Set alternate function mappings */
 #if defined(STM32F4xx) || defined(STM32F7xx)
 
