@@ -222,9 +222,10 @@ typedef struct
 /**
   * @brief  CAN handle Structure definition
   */
-typedef struct
+typedef struct __CAN_HandleTypeDef
 {
   CAN_TypeDef                 *Instance;                 /*!< Register base address */
+<<<<<<< master
 
   CAN_InitTypeDef             Init;                      /*!< CAN required parameters */
 
@@ -232,6 +233,17 @@ typedef struct
 
   __IO uint32_t               ErrorCode;                 /*!< CAN Error code.
                                                               This parameter can be a value of @ref CAN_Error_Code */
+=======
+
+  CAN_InitTypeDef             Init;                      /*!< CAN required parameters */
+
+  __IO HAL_CAN_StateTypeDef   State;                     /*!< CAN communication state */
+
+  __IO uint32_t               ErrorCode;                 /*!< CAN Error code.
+                                                              This parameter can be a value of @ref CAN_Error_Code */
+
+} CAN_HandleTypeDef;
+>>>>>>> local
 
 } CAN_HandleTypeDef;
 /**
@@ -270,6 +282,10 @@ typedef struct
 #define HAL_CAN_ERROR_NOT_READY       (0x00080000U)  /*!< Peripheral not ready                                 */
 #define HAL_CAN_ERROR_NOT_STARTED     (0x00100000U)  /*!< Peripheral not started                               */
 #define HAL_CAN_ERROR_PARAM           (0x00200000U)  /*!< Parameter error                                      */
+<<<<<<< master
+=======
+
+>>>>>>> local
 /**
   * @}
   */
@@ -477,14 +493,24 @@ typedef struct
 #define CAN_IT_BUSOFF               ((uint32_t)CAN_IER_BOFIE)   /*!< Bus-off interrupt                */
 #define CAN_IT_LAST_ERROR_CODE      ((uint32_t)CAN_IER_LECIE)   /*!< Last error code interrupt        */
 #define CAN_IT_ERROR                ((uint32_t)CAN_IER_ERRIE)   /*!< Error Interrupt                  */
+<<<<<<< master
 /**
   * @}
   */
 
+=======
+>>>>>>> local
 /**
   * @}
   */
 
+<<<<<<< master
+=======
+/**
+  * @}
+  */
+
+>>>>>>> local
 /* Exported macros -----------------------------------------------------------*/
 /** @defgroup CAN_Exported_Macros CAN Exported Macros
   * @{
@@ -637,8 +663,13 @@ void HAL_CAN_IRQHandler(CAN_HandleTypeDef *hcan);
  * @}
  */
 
+<<<<<<< master
 /** @addtogroup CAN_Exported_Functions_Group5 Callbacks functions
  *  @brief    Callbacks functions
+=======
+/** @addtogroup CAN_Exported_Functions_Group5 Callback functions
+ *  @brief    Callback functions
+>>>>>>> local
  * @{
  */
 /* Callbacks functions ********************************************************/

@@ -530,7 +530,9 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
       for (i = 0; i < hpcd->Init.dev_endpoints ; i++)
       {
         USBx_INEP(i)->DIEPINT = 0xFF;
+        USBx_INEP(i)->DIEPCTL &= ~USB_OTG_DIEPCTL_STALL;
         USBx_OUTEP(i)->DOEPINT = 0xFF;
+        USBx_OUTEP(i)->DOEPCTL &= ~USB_OTG_DOEPCTL_STALL;
       }
       USBx_DEVICE->DAINT = 0xFFFFFFFF;
       USBx_DEVICE->DAINTMSK |= 0x10001;
@@ -1107,6 +1109,14 @@ HAL_StatusTypeDef HAL_PCD_EP_SetStall(PCD_HandleTypeDef *hpcd, uint8_t ep_addr)
 {
   USB_OTG_EPTypeDef *ep;
 
+<<<<<<< master
+=======
+  if ((ep_addr & 0x0F) > hpcd->Init.dev_endpoints)
+  {
+    return HAL_ERROR;
+  }
+
+>>>>>>> local
   if ((0x80 & ep_addr) == 0x80)
   {
     ep = &hpcd->IN_ep[ep_addr & 0x7F];
@@ -1142,6 +1152,14 @@ HAL_StatusTypeDef HAL_PCD_EP_ClrStall(PCD_HandleTypeDef *hpcd, uint8_t ep_addr)
 {
   USB_OTG_EPTypeDef *ep;
 
+<<<<<<< master
+=======
+  if ((ep_addr & 0x0F) > hpcd->Init.dev_endpoints)
+  {
+    return HAL_ERROR;
+  }
+
+>>>>>>> local
   if ((0x80 & ep_addr) == 0x80)
   {
     ep = &hpcd->IN_ep[ep_addr & 0x7F];

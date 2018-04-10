@@ -3204,7 +3204,10 @@ typedef struct
 HAL_StatusTypeDef HAL_RCCEx_PeriphCLKConfig(RCC_PeriphCLKInitTypeDef  *PeriphClkInit);
 void HAL_RCCEx_GetPeriphCLKConfig(RCC_PeriphCLKInitTypeDef  *PeriphClkInit);
 uint32_t HAL_RCCEx_GetPeriphCLKFreq(uint32_t PeriphClk);
-
+HAL_StatusTypeDef HAL_RCCEx_EnablePLLI2S(RCC_PLLI2SInitTypeDef  *PLLI2SInit);
+HAL_StatusTypeDef HAL_RCCEx_DisablePLLI2S(void);
+HAL_StatusTypeDef HAL_RCCEx_EnablePLLSAI(RCC_PLLSAIInitTypeDef  *PLLSAIInit);
+HAL_StatusTypeDef HAL_RCCEx_DisablePLLSAI(void);
 /**
   * @}
   */ 

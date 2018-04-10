@@ -248,6 +248,7 @@ typedef struct __I2C_HandleTypeDef
 #define I2C_NEXT_FRAME                  ((uint32_t)(I2C_RELOAD_MODE | I2C_SOFTEND_MODE))
 #define I2C_FIRST_AND_LAST_FRAME        ((uint32_t)I2C_AUTOEND_MODE)
 #define I2C_LAST_FRAME                  ((uint32_t)I2C_AUTOEND_MODE)
+#define I2C_LAST_FRAME_NO_STOP          ((uint32_t)I2C_SOFTEND_MODE)
 /**
   * @}
   */
@@ -659,7 +660,8 @@ uint32_t             HAL_I2C_GetError(I2C_HandleTypeDef *hi2c);
                                                    ((REQUEST) == I2C_FIRST_AND_NEXT_FRAME) || \
                                                    ((REQUEST) == I2C_NEXT_FRAME)           || \
                                                    ((REQUEST) == I2C_FIRST_AND_LAST_FRAME) || \
-                                                   ((REQUEST) == I2C_LAST_FRAME))
+                                                   ((REQUEST) == I2C_LAST_FRAME)           || \
+                                                   ((REQUEST) == I2C_LAST_FRAME_NO_STOP))
 
 #define I2C_RESET_CR2(__HANDLE__)                 ((__HANDLE__)->Instance->CR2 &= (uint32_t)~((uint32_t)(I2C_CR2_SADD | I2C_CR2_HEAD10R | I2C_CR2_NBYTES | I2C_CR2_RELOAD | I2C_CR2_RD_WRN)))
 

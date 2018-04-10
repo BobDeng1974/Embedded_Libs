@@ -288,7 +288,7 @@ typedef enum
 /** 
   * @brief  TIM Time Base Handle Structure definition  
   */ 
-typedef struct
+typedef struct __TIM_HandleTypeDef
 {
   TIM_TypeDef                 *Instance;     /*!< Register base address             */
   TIM_Base_InitTypeDef        Init;          /*!< TIM Time Base required parameters */
@@ -297,7 +297,74 @@ typedef struct
                                              This array is accessed by a @ref DMA_Handle_index */
   HAL_LockTypeDef             Lock;          /*!< Locking object                    */
   __IO HAL_TIM_StateTypeDef   State;         /*!< TIM operation state               */
+
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+  void  (* Base_MspInitCallback)         (struct __TIM_HandleTypeDef *htim);  /*!< TIM Base Msp Init Callback          */
+  void  (* Base_MspDeInitCallback)       (struct __TIM_HandleTypeDef *htim);  /*!< TIM Base Msp DeInit Callback        */
+  void  (* IC_MspInitCallback)           (struct __TIM_HandleTypeDef *htim);  /*!< TIM IC Msp Init Callback            */
+  void  (* IC_MspDeInitCallback)         (struct __TIM_HandleTypeDef *htim);  /*!< TIM IC Msp DeInit Callback          */
+  void  (* OC_MspInitCallback)           (struct __TIM_HandleTypeDef *htim);  /*!< TIM OC Msp Init Callback            */
+  void  (* OC_MspDeInitCallback)         (struct __TIM_HandleTypeDef *htim);  /*!< TIM OC Msp DeInit Callback          */
+  void  (* PWM_MspInitCallback)          (struct __TIM_HandleTypeDef *htim);  /*!< TIM PWM Msp Init Callback           */
+  void  (* PWM_MspDeInitCallback)        (struct __TIM_HandleTypeDef *htim);  /*!< TIM PWM Msp DeInit Callback         */
+  void  (* OnePulse_MspInitCallback)     (struct __TIM_HandleTypeDef *htim);  /*!< TIM One Pulse Msp Init Callback     */
+  void  (* OnePulse_MspDeInitCallback)   (struct __TIM_HandleTypeDef *htim);  /*!< TIM One Pulse Msp DeInit Callback   */
+  void  (* Encoder_MspInitCallback)      (struct __TIM_HandleTypeDef *htim);  /*!< TIM Encoder Msp Init Callback       */
+  void  (* Encoder_MspDeInitCallback)    (struct __TIM_HandleTypeDef *htim);  /*!< TIM Encoder Msp DeInit Callback     */
+  void  (* HallSensor_MspInitCallback)   (struct __TIM_HandleTypeDef *htim);  /*!< TIM Hall Sensor Msp Init Callback   */
+  void  (* HallSensor_MspDeInitCallback) (struct __TIM_HandleTypeDef *htim);  /*!< TIM Hall Sensor Msp DeInit Callback */
+
+  void  (* PeriodElapsedCallback)        (struct __TIM_HandleTypeDef *htim);  /*!< TIM Period Elapsed Callback               */
+  void  (* TriggerCallback)              (struct __TIM_HandleTypeDef *htim);  /*!< TIM Trigger Callback                      */
+  void  (* IC_CaptureCallback)           (struct __TIM_HandleTypeDef *htim);  /*!< TIM Input Capture Callback                */
+  void  (* OC_DelayElapsedCallback)      (struct __TIM_HandleTypeDef *htim);  /*!< TIM Output Compare Delay Elapsed Callback */
+  void  (* PWM_PulseFinishedCallback)    (struct __TIM_HandleTypeDef *htim);  /*!< TIM PWM Pulse Finished Callback           */
+  void  (* ErrorCallback)                (struct __TIM_HandleTypeDef *htim);  /*!< TIM Error Callback                        */
+  void  (* CommutationCallback)          (struct __TIM_HandleTypeDef *htim);  /*!< TIM Commutation Callback                  */
+  void  (* BreakCallback)                (struct __TIM_HandleTypeDef *htim);  /*!< TIM Break Callback                        */
+
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
+
 }TIM_HandleTypeDef;
+
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+/**
+  * @brief  HAL TIM Callback ID enumeration definition
+  */
+typedef enum
+{
+  HAL_TIM_BASE_MSPINIT_CB_ID          = 0x00U,    /*!< TIM Base MspInit Callback ID        */
+  HAL_TIM_BASE_MSPDEINIT_CB_ID        = 0x01U,    /*!< TIM Base MspDeInit Callback ID      */
+  HAL_TIM_IC_MSPINIT_CB_ID            = 0x02U,    /*!< TIM IC MspInit Callback ID          */
+  HAL_TIM_IC_MSPDEINIT_CB_ID          = 0x03U,    /*!< TIM IC MspDeInit Callback ID        */
+  HAL_TIM_OC_MSPINIT_CB_ID            = 0x04U,    /*!< TIM OC MspInit Callback ID          */
+  HAL_TIM_OC_MSPDEINIT_CB_ID          = 0x05U,    /*!< TIM OC MspDeInit Callback ID        */
+  HAL_TIM_PWM_MSPINIT_CB_ID           = 0x06U,    /*!< TIM PWM MspInit Callback ID         */
+  HAL_TIM_PWM_MSPDEINIT_CB_ID         = 0x07U,    /*!< TIM PWM MspDeInit Callback ID       */
+  HAL_TIM_ONE_PULSE_MSPINIT_CB_ID     = 0x08U,    /*!< TIM One Pulse MspInit Callback ID   */
+  HAL_TIM_ONE_PULSE_MSPDEINIT_CB_ID   = 0x09U,    /*!< TIM One Pulse MspDeInit Callback ID */
+  HAL_TIM_ENCODER_MSPINIT_CB_ID       = 0x0AU,    /*!< TIM Encoder MspInit Callback ID     */
+  HAL_TIM_ENCODER_MSPDEINIT_CB_ID     = 0x0BU,    /*!< TIM Encoder MspDeInit Callback ID   */
+  HAL_TIM_HALL_SENSOR_MSPINIT_CB_ID   = 0x0CU,    /*!< TIM Encoder MspDeInit Callback ID   */
+  HAL_TIM_HALL_SENSOR_MSPDEINIT_CB_ID = 0x0DU,    /*!< TIM Encoder MspDeInit Callback ID   */
+
+  HAL_TIM_PERIOD_ELAPSED_CB_ID        = 0x0EU,    /*!< TIM Period Elapsed Callback ID               */
+  HAL_TIM_TRIGGER_CB_ID               = 0x0FU,    /*!< TIM Trigger Callback ID                      */
+  HAL_TIM_IC_CAPTURE_CB_ID            = 0x10U,    /*!< TIM Input Capture Callback ID                */
+  HAL_TIM_OC_DELAY_ELAPSED_CB_ID      = 0x11U,    /*!< TIM Output Compare Delay Elapsed Callback ID */
+  HAL_TIM_PWM_PULSE_FINISHED_CB_ID    = 0x12U,    /*!< TIM PWM Pulse Finished Callback ID           */
+  HAL_TIM_ERROR_CB_ID                 = 0x13U,    /*!< TIM Error Callback ID                        */
+  HAL_TIM_COMMUTATION_CB_ID           = 0x14U,    /*!< TIM Commutation Callback ID                  */
+  HAL_TIM_BREAK_CB_ID                 = 0x15U     /*!< TIM Break Callback ID                        */
+
+}HAL_TIM_CallbackIDTypeDef;
+
+/**
+  * @brief  HAL TIM Callback pointer definition
+  */
+typedef  void (*pTIM_CallbackTypeDef)(TIM_HandleTypeDef * htim); /*!< pointer to the TIM callback function */
+
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
 /**
   * @}
   */
@@ -1248,6 +1315,7 @@ HAL_StatusTypeDef HAL_TIM_PWM_Init(TIM_HandleTypeDef *htim);
 HAL_StatusTypeDef HAL_TIM_PWM_DeInit(TIM_HandleTypeDef *htim);
 void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef *htim);
 void HAL_TIM_PWM_MspDeInit(TIM_HandleTypeDef *htim);
+
 /* Blocking mode: Polling */
 HAL_StatusTypeDef HAL_TIM_PWM_Start(TIM_HandleTypeDef *htim, uint32_t Channel);
 HAL_StatusTypeDef HAL_TIM_PWM_Stop(TIM_HandleTypeDef *htim, uint32_t Channel);
@@ -1372,6 +1440,12 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim);
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim);
 void HAL_TIM_TriggerCallback(TIM_HandleTypeDef *htim);
 void HAL_TIM_ErrorCallback(TIM_HandleTypeDef *htim);
+
+/* Callbacks Register/UnRegister functions  ***********************************/
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+HAL_StatusTypeDef HAL_TIM_RegisterCallback(TIM_HandleTypeDef *htim, HAL_TIM_CallbackIDTypeDef CallbackID, pTIM_CallbackTypeDef pCallback);
+HAL_StatusTypeDef HAL_TIM_UnRegisterCallback(TIM_HandleTypeDef *htim, HAL_TIM_CallbackIDTypeDef CallbackID);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
 
 /**
   * @}
@@ -1680,9 +1754,17 @@ HAL_TIM_StateTypeDef HAL_TIM_Encoder_GetState(TIM_HandleTypeDef *htim);
  ((__CHANNEL__) == TIM_CHANNEL_2) ? ((__HANDLE__)->Instance->CCER &= (uint16_t)~(TIM_CCER_CC2P | TIM_CCER_CC2NP)) :\
  ((__CHANNEL__) == TIM_CHANNEL_3) ? ((__HANDLE__)->Instance->CCER &= (uint16_t)~(TIM_CCER_CC3P | TIM_CCER_CC3NP)) :\
  ((__HANDLE__)->Instance->CCER &= (uint16_t)~TIM_CCER_CC4P))
+<<<<<<< master
 /**
   * @}
   */
+
+=======
+>>>>>>> local
+/**
+  * @}
+  */
+/* End of private macros -----------------------------------------------------*/
 
 /**
   * @}
@@ -1705,6 +1787,11 @@ void HAL_TIM_DMADelayPulseCplt(DMA_HandleTypeDef *hdma);
 void HAL_TIM_DMAError(DMA_HandleTypeDef *hdma);
 void HAL_TIM_DMACaptureCplt(DMA_HandleTypeDef *hdma);
 void TIM_CCxChannelCmd(TIM_TypeDef* TIMx, uint32_t Channel, uint32_t ChannelState);
+
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+void TIM_ResetCallback(TIM_HandleTypeDef *htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
+
 /**
   * @}
   */ 

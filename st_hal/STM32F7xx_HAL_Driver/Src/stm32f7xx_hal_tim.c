@@ -92,6 +92,63 @@
          HAL_TIM_DMABurst_WriteStart()
          HAL_TIM_DMABurst_ReadStart()
   
+    *** Callback registration ***
+  =============================================
+
+  The compilation define  USE_HAL_TIM_REGISTER_CALLBACKS when set to 1
+  allows the user to configure dynamically the driver callbacks.
+
+  Use Function @ref HAL_TIM_RegisterCallback() to register a callback.
+  @ref HAL_TIM_RegisterCallback() takes as parameters the HAL peripheral handle,
+  the Callback ID and a pointer to the user callback function.
+
+  Use function @ref HAL_TIM_UnRegisterCallback() to reset a callback to the default
+  weak function.
+  @ref HAL_TIM_UnRegisterCallback takes as parameters the HAL peripheral handle,
+  and the Callback ID.
+
+  These functions allow to register/unregister following callbacks:
+    (+) Base_MspInitCallback       : TIM Base Msp Init Callback.
+    (+) Base_MspDeInitCallback     : TIM Base Msp DeInit Callback.
+    (+) IC_MspInitCallback         : TIM IC Msp Init Callback.
+    (+) IC_MspDeInitCallback       : TIM IC Msp DeInit Callback.
+    (+) OC_MspInitCallback         : TIM OC Msp Init Callback.
+    (+) OC_MspDeInitCallback       : TIM OC Msp DeInit Callback.
+    (+) PWM_MspInitCallback        : TIM PWM Msp Init Callback.
+    (+) PWM_MspDeInitCallback      : TIM PWM Msp DeInit Callback.
+    (+) OnePulse_MspInitCallback   : TIM One Pulse Msp Init Callback.
+    (+) OnePulse_MspDeInitCallback : TIM One Pulse Msp DeInit Callback.
+    (+) Encoder_MspInitCallback    : TIM Encoder Msp Init Callback.
+    (+) Encoder_MspDeInitCallback  : TIM Encoder Msp DeInit Callback.
+    (+) PeriodElapsedCallback      : TIM Period Elapsed Callback.
+    (+) TriggerCallback            : TIM Trigger Callback.
+    (+) IC_CaptureCallback         : TIM Input Capture Callback.
+    (+) OC_DelayElapsedCallback    : TIM Output Compare Delay Elapsed Callback.
+    (+) PWM_PulseFinishedCallback  : TIM PWM Pulse Finished Callback.
+    (+) ErrorCallback              : TIM Error Callback.
+    (+) CommutationCallback        : TIM Commutation Callback.
+    (+) BreakCallback              : TIM Break Callback.
+
+  By default, after the Init and when the state is HAL_TIM_STATE_RESET
+  all interrupt callbacks are set to the corresponding weak functions:
+  examples @ref HAL_TIM_TriggerCallback(), @ref HAL_TIM_ErrorCallback().
+
+  Exception done for MspInit and MspDeInit functions that are reset to the legacy weak
+  functionalities in the Init/DeInit only when these callbacks are null
+  (not registered beforehand). If not, MspInit or MspDeInit are not null, the Init/DeInit
+  keep and use the user MspInit/MspDeInit callbacks (registered beforehand)
+
+  Callbacks can be registered/unregistered in HAL_TIM_STATE_READY state only.
+  Exception done MspInit/MspDeInit that can be registered/unregistered
+  in HAL_TIM_STATE_READY or HAL_TIM_STATE_RESET state,
+  thus registered (user) MspInit/DeInit callbacks can be used during the Init/DeInit.
+  In that case first register the MspInit/MspDeInit user callbacks
+  using @ref HAL_TIM_RegisterCallback() before calling DeInit or Init function.
+
+  When The compilation define USE_HAL_TIM_REGISTER_CALLBACKS is set to 0 or
+  not defined, the callback registration feature is not available and all callbacks
+  are set to the corresponding weak functions.
+
   @endverbatim
   ******************************************************************************
   * @attention
@@ -159,6 +216,7 @@ static void TIM_DMAPeriodElapsedCplt(DMA_HandleTypeDef *hdma);
 static void TIM_DMATriggerCplt(DMA_HandleTypeDef *hdma);
 static void TIM_SlaveTimer_SetConfig(TIM_HandleTypeDef *htim,
                                      TIM_SlaveConfigTypeDef * sSlaveConfig);
+
 /**
   * @}
   */
@@ -203,21 +261,33 @@ HAL_StatusTypeDef HAL_TIM_Base_Init(TIM_HandleTypeDef *htim)
   {
     return HAL_ERROR;
   }
-  
+
   /* Check the parameters */
   assert_param(IS_TIM_INSTANCE(htim->Instance)); 
   assert_param(IS_TIM_COUNTER_MODE(htim->Init.CounterMode));
   assert_param(IS_TIM_CLOCKDIVISION_DIV(htim->Init.ClockDivision));
   assert_param(IS_TIM_AUTORELOAD_PRELOAD(htim->Init.AutoReloadPreload));
-  
+
   if(htim->State == HAL_TIM_STATE_RESET)
-  {  
+  {
     /* Allocate lock resource and initialize it */
     htim->Lock = HAL_UNLOCKED;
+
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+    /* Reset interrupt callbacks to legacy week callbacks */
+    TIM_ResetCallback(htim);
+
+    if(htim->Base_MspInitCallback == NULL)
+    {
+      htim->Base_MspInitCallback = HAL_TIM_Base_MspInit;
+    }
+    /* Init the low level hardware : GPIO, CLOCK, NVIC */
+    htim->Base_MspInitCallback(htim);
+#else
     /* Init the low level hardware : GPIO, CLOCK, NVIC */
     HAL_TIM_Base_MspInit(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
   }
-  
   /* Set the TIM state */
   htim->State= HAL_TIM_STATE_BUSY;
   
@@ -245,9 +315,18 @@ HAL_StatusTypeDef HAL_TIM_Base_DeInit(TIM_HandleTypeDef *htim)
    
   /* Disable the TIM Peripheral Clock */
   __HAL_TIM_DISABLE(htim);
-    
+
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+  if(htim->Base_MspDeInitCallback == NULL)
+  {
+    htim->Base_MspDeInitCallback = HAL_TIM_Base_MspDeInit;
+  }
+  /* DeInit the low level hardware */
+  htim->Base_MspDeInitCallback(htim);
+#else
   /* DeInit the low level hardware: GPIO, CLOCK, NVIC */
   HAL_TIM_Base_MspDeInit(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
   
   /* Change TIM state */  
   htim->State = HAL_TIM_STATE_RESET; 
@@ -497,13 +576,25 @@ HAL_StatusTypeDef HAL_TIM_OC_Init(TIM_HandleTypeDef* htim)
   assert_param(IS_TIM_AUTORELOAD_PRELOAD(htim->Init.AutoReloadPreload));
 
   if(htim->State == HAL_TIM_STATE_RESET)
-  { 
+  {
     /* Allocate lock resource and initialize it */
-    htim->Lock = HAL_UNLOCKED;  
+    htim->Lock = HAL_UNLOCKED;
+
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+    /* Reset interrupt callbacks to legacy week callbacks */
+    TIM_ResetCallback(htim);
+
+    if(htim->OC_MspInitCallback == NULL)
+    {
+      htim->OC_MspInitCallback = HAL_TIM_OC_MspDeInit;
+    }
+    /* Init the low level hardware : GPIO, CLOCK, NVIC */
+    htim->OC_MspInitCallback(htim);
+#else
     /* Init the low level hardware : GPIO, CLOCK, NVIC and DMA */
     HAL_TIM_OC_MspInit(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
   }
-  
   /* Set the TIM state */
   htim->State= HAL_TIM_STATE_BUSY;
   
@@ -531,10 +622,19 @@ HAL_StatusTypeDef HAL_TIM_OC_DeInit(TIM_HandleTypeDef *htim)
    
   /* Disable the TIM Peripheral Clock */
   __HAL_TIM_DISABLE(htim);
-  
+
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+  if(htim->OC_MspDeInitCallback == NULL)
+  {
+    htim->OC_MspDeInitCallback = HAL_TIM_OC_MspDeInit;
+  }
+  /* DeInit the low level hardware */
+  htim->OC_MspDeInitCallback(htim);
+#else
   /* DeInit the low level hardware: GPIO, CLOCK, NVIC and DMA */
   HAL_TIM_OC_MspDeInit(htim);
-    
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
+
   /* Change TIM state */  
   htim->State = HAL_TIM_STATE_RESET; 
 
@@ -1015,11 +1115,23 @@ HAL_StatusTypeDef HAL_TIM_PWM_Init(TIM_HandleTypeDef *htim)
   if(htim->State == HAL_TIM_STATE_RESET)
   {
     /* Allocate lock resource and initialize it */
-    htim->Lock = HAL_UNLOCKED;  
+    htim->Lock = HAL_UNLOCKED;
+
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+    /* Reset interrupt callbacks to legacy week callbacks */
+    TIM_ResetCallback(htim);
+
+    if(htim->PWM_MspInitCallback == NULL)
+    {
+      htim->PWM_MspInitCallback = HAL_TIM_PWM_MspInit;
+    }
+    /* Init the low level hardware : GPIO, CLOCK, NVIC */
+    htim->PWM_MspInitCallback(htim);
+#else
     /* Init the low level hardware : GPIO, CLOCK, NVIC and DMA */
     HAL_TIM_PWM_MspInit(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
   }
-
   /* Set the TIM state */
   htim->State= HAL_TIM_STATE_BUSY;  
   
@@ -1047,10 +1159,19 @@ HAL_StatusTypeDef HAL_TIM_PWM_DeInit(TIM_HandleTypeDef *htim)
   
   /* Disable the TIM Peripheral Clock */
   __HAL_TIM_DISABLE(htim);
-    
+
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+  if(htim->PWM_MspDeInitCallback == NULL)
+  {
+    htim->PWM_MspDeInitCallback = HAL_TIM_PWM_MspDeInit;
+  }
+  /* DeInit the low level hardware */
+  htim->PWM_MspDeInitCallback(htim);
+#else
   /* DeInit the low level hardware: GPIO, CLOCK, NVIC and DMA */
   HAL_TIM_PWM_MspDeInit(htim);
-    
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
+
   /* Change TIM state */  
   htim->State = HAL_TIM_STATE_RESET; 
 
@@ -1532,13 +1653,26 @@ HAL_StatusTypeDef HAL_TIM_IC_Init(TIM_HandleTypeDef *htim)
   assert_param(IS_TIM_AUTORELOAD_PRELOAD(htim->Init.AutoReloadPreload));
 
   if(htim->State == HAL_TIM_STATE_RESET)
-  { 
+  {
     /* Allocate lock resource and initialize it */
-    htim->Lock = HAL_UNLOCKED;   
+    htim->Lock = HAL_UNLOCKED;
+
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+    /* Reset interrupt callbacks to legacy week callbacks */
+    TIM_ResetCallback(htim);
+
+    if(htim->IC_MspInitCallback == NULL)
+    {
+      htim->IC_MspInitCallback = HAL_TIM_IC_MspInit;
+    }
+    /* Init the low level hardware : GPIO, CLOCK, NVIC */
+    htim->IC_MspInitCallback(htim);
+#else
     /* Init the low level hardware : GPIO, CLOCK, NVIC and DMA */
     HAL_TIM_IC_MspInit(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
   }
-  
+
   /* Set the TIM state */
   htim->State= HAL_TIM_STATE_BUSY;   
   
@@ -1566,10 +1700,19 @@ HAL_StatusTypeDef HAL_TIM_IC_DeInit(TIM_HandleTypeDef *htim)
   
   /* Disable the TIM Peripheral Clock */
   __HAL_TIM_DISABLE(htim);
-    
+
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+  if(htim->IC_MspDeInitCallback == NULL)
+  {
+    htim->IC_MspDeInitCallback = HAL_TIM_IC_MspDeInit;
+  }
+  /* DeInit the low level hardware */
+  htim->IC_MspDeInitCallback(htim);
+#else
   /* DeInit the low level hardware: GPIO, CLOCK, NVIC and DMA */
   HAL_TIM_IC_MspDeInit(htim);
-    
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
+
   /* Change TIM state */  
   htim->State = HAL_TIM_STATE_RESET;
 
@@ -2018,13 +2161,26 @@ HAL_StatusTypeDef HAL_TIM_OnePulse_Init(TIM_HandleTypeDef *htim, uint32_t OnePul
   assert_param(IS_TIM_AUTORELOAD_PRELOAD(htim->Init.AutoReloadPreload));
 
   if(htim->State == HAL_TIM_STATE_RESET)
-  { 
+  {
     /* Allocate lock resource and initialize it */
-    htim->Lock = HAL_UNLOCKED;    
+    htim->Lock = HAL_UNLOCKED;
+
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+    /* Reset interrupt callbacks to legacy week callbacks */
+    TIM_ResetCallback(htim);
+
+    if(htim->OnePulse_MspDeInitCallback == NULL)
+    {
+      htim->OnePulse_MspDeInitCallback = HAL_TIM_OnePulse_MspInit;
+    }
+    /* Init the low level hardware : GPIO, CLOCK, NVIC */
+    htim->OnePulse_MspDeInitCallback(htim);
+#else
     /* Init the low level hardware : GPIO, CLOCK, NVIC and DMA */
     HAL_TIM_OnePulse_MspInit(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
   }
-  
+
   /* Set the TIM state */
   htim->State= HAL_TIM_STATE_BUSY;  
   
@@ -2058,10 +2214,19 @@ HAL_StatusTypeDef HAL_TIM_OnePulse_DeInit(TIM_HandleTypeDef *htim)
   
   /* Disable the TIM Peripheral Clock */
   __HAL_TIM_DISABLE(htim);
-  
+
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+  if(htim->OnePulse_MspDeInitCallback == NULL)
+  {
+    htim->OnePulse_MspDeInitCallback = HAL_TIM_OnePulse_MspDeInit;
+  }
+  /* DeInit the low level hardware */
+  htim->OnePulse_MspDeInitCallback(htim);
+#else
   /* DeInit the low level hardware: GPIO, CLOCK, NVIC */
   HAL_TIM_OnePulse_MspDeInit(htim);
-    
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
+
   /* Change TIM state */  
   htim->State = HAL_TIM_STATE_RESET;
 
@@ -2115,6 +2280,9 @@ __weak void HAL_TIM_OnePulse_MspDeInit(TIM_HandleTypeDef *htim)
   */
 HAL_StatusTypeDef HAL_TIM_OnePulse_Start(TIM_HandleTypeDef *htim, uint32_t OutputChannel)
 {
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(OutputChannel);
+
   /* Enable the Capture compare and the Input Capture channels 
     (in the OPM Mode the two possible channels that can be used are TIM_CHANNEL_1 and TIM_CHANNEL_2)
     if TIM_CHANNEL_1 is used as output, the TIM_CHANNEL_2 will be used as input and
@@ -2149,6 +2317,9 @@ HAL_StatusTypeDef HAL_TIM_OnePulse_Start(TIM_HandleTypeDef *htim, uint32_t Outpu
   */
 HAL_StatusTypeDef HAL_TIM_OnePulse_Stop(TIM_HandleTypeDef *htim, uint32_t OutputChannel)
 {
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(OutputChannel);
+
   /* Disable the Capture compare and the Input Capture channels 
   (in the OPM Mode the two possible channels that can be used are TIM_CHANNEL_1 and TIM_CHANNEL_2)
   if TIM_CHANNEL_1 is used as output, the TIM_CHANNEL_2 will be used as input and
@@ -2191,7 +2362,10 @@ HAL_StatusTypeDef HAL_TIM_OnePulse_Start_IT(TIM_HandleTypeDef *htim, uint32_t Ou
     
     No need to enable the counter, it's enabled automatically by hardware 
     (the counter starts in response to a stimulus and generate a pulse */
- 
+
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(OutputChannel);
+
   /* Enable the TIM Capture/Compare 1 interrupt */
   __HAL_TIM_ENABLE_IT(htim, TIM_IT_CC1);
   
@@ -2223,6 +2397,9 @@ HAL_StatusTypeDef HAL_TIM_OnePulse_Start_IT(TIM_HandleTypeDef *htim, uint32_t Ou
   */
 HAL_StatusTypeDef HAL_TIM_OnePulse_Stop_IT(TIM_HandleTypeDef *htim, uint32_t OutputChannel)
 {
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(OutputChannel);
+  
   /* Disable the TIM Capture/Compare 1 interrupt */
   __HAL_TIM_DISABLE_IT(htim, TIM_IT_CC1);  
   
@@ -2310,13 +2487,26 @@ HAL_StatusTypeDef HAL_TIM_Encoder_Init(TIM_HandleTypeDef *htim,  TIM_Encoder_Ini
   assert_param(IS_TIM_IC_FILTER(sConfig->IC2Filter));
 
   if(htim->State == HAL_TIM_STATE_RESET)
-  { 
+  {
     /* Allocate lock resource and initialize it */
-    htim->Lock = HAL_UNLOCKED;  
+    htim->Lock = HAL_UNLOCKED;
+
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+    /* Reset interrupt callbacks to legacy week callbacks */
+    TIM_ResetCallback(htim);
+
+    if(htim->Encoder_MspInitCallback == NULL)
+    {
+      htim->Encoder_MspInitCallback = HAL_TIM_Encoder_MspInit;
+    }
+    /* Init the low level hardware : GPIO, CLOCK, NVIC */
+    htim->Encoder_MspInitCallback(htim);
+#else
     /* Init the low level hardware : GPIO, CLOCK, NVIC and DMA */
     HAL_TIM_Encoder_MspInit(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
   }
-  
+
   /* Set the TIM state */
   htim->State= HAL_TIM_STATE_BUSY;   
     
@@ -2383,10 +2573,19 @@ HAL_StatusTypeDef HAL_TIM_Encoder_DeInit(TIM_HandleTypeDef *htim)
   
   /* Disable the TIM Peripheral Clock */
   __HAL_TIM_DISABLE(htim);
-  
+
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+  if(htim->Encoder_MspDeInitCallback == NULL)
+  {
+    htim->Encoder_MspDeInitCallback = HAL_TIM_Encoder_MspDeInit;
+  }
+  /* DeInit the low level hardware */
+  htim->Encoder_MspDeInitCallback(htim);
+#else
   /* DeInit the low level hardware: GPIO, CLOCK, NVIC */
   HAL_TIM_Encoder_MspDeInit(htim);
-    
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
+
   /* Change TIM state */  
   htim->State = HAL_TIM_STATE_RESET;
  
@@ -2825,13 +3024,22 @@ void HAL_TIM_IRQHandler(TIM_HandleTypeDef *htim)
         /* Input capture event */
         if((htim->Instance->CCMR1 & TIM_CCMR1_CC1S) != 0x00)
         {
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+          htim->IC_CaptureCallback(htim);
+#else
           HAL_TIM_IC_CaptureCallback(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
         }
         /* Output compare event */
         else
         {
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+          htim->OC_DelayElapsedCallback(htim);
+          htim->PWM_PulseFinishedCallback(htim);
+#else
           HAL_TIM_OC_DelayElapsedCallback(htim);
           HAL_TIM_PWM_PulseFinishedCallback(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
         }
         htim->Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
       }
@@ -2846,14 +3054,23 @@ void HAL_TIM_IRQHandler(TIM_HandleTypeDef *htim)
       htim->Channel = HAL_TIM_ACTIVE_CHANNEL_2;
       /* Input capture event */
       if((htim->Instance->CCMR1 & TIM_CCMR1_CC2S) != 0x00)
-      {          
+      {
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+        htim->IC_CaptureCallback(htim);
+#else
         HAL_TIM_IC_CaptureCallback(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
       }
       /* Output compare event */
       else
       {
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+        htim->OC_DelayElapsedCallback(htim);
+        htim->PWM_PulseFinishedCallback(htim);
+#else
         HAL_TIM_OC_DelayElapsedCallback(htim);
         HAL_TIM_PWM_PulseFinishedCallback(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
       }
       htim->Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
     }
@@ -2868,13 +3085,22 @@ void HAL_TIM_IRQHandler(TIM_HandleTypeDef *htim)
       /* Input capture event */
       if((htim->Instance->CCMR2 & TIM_CCMR2_CC3S) != 0x00)
       {          
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+        htim->IC_CaptureCallback(htim);
+#else
         HAL_TIM_IC_CaptureCallback(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
       }
       /* Output compare event */
       else
       {
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+        htim->OC_DelayElapsedCallback(htim);
+        htim->PWM_PulseFinishedCallback(htim);
+#else
         HAL_TIM_OC_DelayElapsedCallback(htim);
-        HAL_TIM_PWM_PulseFinishedCallback(htim); 
+        HAL_TIM_PWM_PulseFinishedCallback(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
       }
       htim->Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
     }
@@ -2889,13 +3115,22 @@ void HAL_TIM_IRQHandler(TIM_HandleTypeDef *htim)
       /* Input capture event */
       if((htim->Instance->CCMR2 & TIM_CCMR2_CC4S) != 0x00)
       {          
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+        htim->IC_CaptureCallback(htim);
+#else
         HAL_TIM_IC_CaptureCallback(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
       }
       /* Output compare event */
       else
       {
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+        htim->OC_DelayElapsedCallback(htim);
+        htim->PWM_PulseFinishedCallback(htim);
+#else
         HAL_TIM_OC_DelayElapsedCallback(htim);
         HAL_TIM_PWM_PulseFinishedCallback(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
       }
       htim->Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
     }
@@ -2906,7 +3141,11 @@ void HAL_TIM_IRQHandler(TIM_HandleTypeDef *htim)
     if(__HAL_TIM_GET_IT_SOURCE(htim, TIM_IT_UPDATE) !=RESET)
     {
       __HAL_TIM_CLEAR_IT(htim, TIM_IT_UPDATE);
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+      htim->PeriodElapsedCallback(htim);
+#else
       HAL_TIM_PeriodElapsedCallback(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
     }
   }
   /* TIM Break input event */
@@ -2915,7 +3154,12 @@ void HAL_TIM_IRQHandler(TIM_HandleTypeDef *htim)
     if(__HAL_TIM_GET_IT_SOURCE(htim, TIM_IT_BREAK) !=RESET)
     {
       __HAL_TIM_CLEAR_IT(htim, TIM_IT_BREAK);
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+      htim->BreakCallback(htim);
+#else
       HAL_TIMEx_BreakCallback(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
+
     }
   }
   
@@ -2925,7 +3169,11 @@ void HAL_TIM_IRQHandler(TIM_HandleTypeDef *htim)
     if(__HAL_TIM_GET_IT_SOURCE(htim, TIM_IT_BREAK) !=RESET)
     {
       __HAL_TIM_CLEAR_IT(htim, TIM_IT_BREAK);
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+      htim->BreakCallback(htim);
+#else
       HAL_TIMEx_BreakCallback(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
     }
   }
 
@@ -2935,7 +3183,11 @@ void HAL_TIM_IRQHandler(TIM_HandleTypeDef *htim)
     if(__HAL_TIM_GET_IT_SOURCE(htim, TIM_IT_TRIGGER) !=RESET)
     {
       __HAL_TIM_CLEAR_IT(htim, TIM_IT_TRIGGER);
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+      htim->TriggerCallback(htim);
+#else
       HAL_TIM_TriggerCallback(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
     }
   }
   /* TIM commutation event */
@@ -2944,7 +3196,11 @@ void HAL_TIM_IRQHandler(TIM_HandleTypeDef *htim)
     if(__HAL_TIM_GET_IT_SOURCE(htim, TIM_IT_COM) !=RESET)
     {
       __HAL_TIM_CLEAR_IT(htim, TIM_FLAG_COM);
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+      htim->CommutationCallback(htim);
+#else
       HAL_TIMEx_CommutationCallback(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
     }
   }
 }
@@ -4417,6 +4673,8 @@ uint32_t HAL_TIM_ReadCapturedValue(TIM_HandleTypeDef *htim, uint32_t Channel)
    (+) Timer Input capture callback
    (+) Timer Trigger callback
    (+) Timer Error callback
+   (+) Timer_RegisterCallback
+   (+) Timer_UnRegisterCallback
 
 @endverbatim
   * @{
@@ -4516,6 +4774,438 @@ __weak void HAL_TIM_ErrorCallback(TIM_HandleTypeDef *htim)
             the HAL_TIM_ErrorCallback could be implemented in the user file
    */
 }
+
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+/**
+  * @brief  Register a User TIM callback to be used instead of the weak predefined callback
+  * @param htim tim handle
+  * @param CallbackID ID of the callback to be registered
+  *        This parameter can be one of the following values:
+  *          @arg @ref HAL_TIM_BASE_MSPINIT_CB_ID Base MspInit Callback ID
+  *          @arg @ref HAL_TIM_BASE_MSPDEINIT_CB_ID Base MspDeInit Callback ID
+  *          @arg @ref HAL_TIM_IC_MSPINIT_CB_ID IC MspInit Callback ID
+  *          @arg @ref HAL_TIM_IC_MSPDEINIT_CB_ID IC MspDeInit Callback ID
+  *          @arg @ref HAL_TIM_OC_MSPINIT_CB_ID OC MspInit Callback ID
+  *          @arg @ref HAL_TIM_OC_MSPDEINIT_CB_ID OC MspDeInit Callback ID
+  *          @arg @ref HAL_TIM_PWM_MSPINIT_CB_ID PWM MspInit Callback ID
+  *          @arg @ref HAL_TIM_PWM_MSPDEINIT_CB_ID PWM MspDeInit Callback ID
+  *          @arg @ref HAL_TIM_ONE_PULSE_MSPINIT_CB_ID One Pulse MspInit Callback ID
+  *          @arg @ref HAL_TIM_ONE_PULSE_MSPDEINIT_CB_ID One Pulse MspDeInit Callback ID
+  *          @arg @ref HAL_TIM_ENCODER_MSPINIT_CB_ID Encoder MspInit Callback ID
+  *          @arg @ref HAL_TIM_ENCODER_MSPDEINIT_CB_ID Encoder MspDeInit Callback ID
+  *          @arg @ref HAL_TIM_HALL_SENSOR_MSPINIT_CB_ID Hall Sensor MspInit Callback ID
+  *          @arg @ref HAL_TIM_HALL_SENSOR_MSPDEINIT_CB_ID Hall Sensor MspDeInit Callback ID
+  *          @arg @ref HAL_TIM_PERIOD_ELAPSED_CB_ID Period Elapsed Callback ID
+  *          @arg @ref HAL_TIM_TRIGGER_CB_ID Trigger Callback ID
+  *          @arg @ref HAL_TIM_IC_CAPTURE_CB_ID Input Capture Callback ID
+  *          @arg @ref HAL_TIM_OC_DELAY_ELAPSED_CB_ID Output Compare Delay Elapsed Callback ID
+  *          @arg @ref HAL_TIM_PWM_PULSE_FINISHED_CB_ID PWM Pulse Finished Callback ID
+  *          @arg @ref HAL_TIM_ERROR_CB_ID Error Callback ID
+  *          @arg @ref HAL_TIM_COMMUTATION_CB_ID Commutation Callback ID
+  *          @arg @ref HAL_TIM_BREAK_CB_ID Break Callback ID
+  * @param pCallback pointer to the callback function
+  * @retval status
+  */
+HAL_StatusTypeDef HAL_TIM_RegisterCallback(TIM_HandleTypeDef *htim, HAL_TIM_CallbackIDTypeDef CallbackID, pTIM_CallbackTypeDef pCallback)
+{
+  HAL_StatusTypeDef status = HAL_OK;
+
+  if(pCallback == NULL)
+  {
+    return HAL_ERROR;
+  }
+  /* Process locked */
+  __HAL_LOCK(htim);
+
+  if(htim->State == HAL_TIM_STATE_READY)
+  {
+    switch (CallbackID)
+    {
+    case HAL_TIM_BASE_MSPINIT_CB_ID :
+      htim->Base_MspInitCallback         = pCallback;
+      break;
+
+    case HAL_TIM_BASE_MSPDEINIT_CB_ID :
+      htim->Base_MspDeInitCallback       = pCallback;
+      break;
+
+    case HAL_TIM_IC_MSPINIT_CB_ID :
+      htim->IC_MspInitCallback           = pCallback;
+      break;
+
+    case HAL_TIM_IC_MSPDEINIT_CB_ID :
+      htim->IC_MspDeInitCallback         = pCallback;
+      break;
+
+    case HAL_TIM_OC_MSPINIT_CB_ID :
+      htim->OC_MspInitCallback           = pCallback;
+      break;
+
+    case HAL_TIM_OC_MSPDEINIT_CB_ID :
+      htim->OC_MspDeInitCallback         = pCallback;
+      break;
+
+    case HAL_TIM_PWM_MSPINIT_CB_ID :
+      htim->PWM_MspInitCallback          = pCallback;
+      break;
+
+    case HAL_TIM_PWM_MSPDEINIT_CB_ID :
+      htim->PWM_MspDeInitCallback        = pCallback;
+      break;
+
+    case HAL_TIM_ONE_PULSE_MSPINIT_CB_ID :
+      htim->OnePulse_MspInitCallback     = pCallback;
+      break;
+
+    case HAL_TIM_ONE_PULSE_MSPDEINIT_CB_ID :
+      htim->OnePulse_MspDeInitCallback   = pCallback;
+      break;
+
+    case HAL_TIM_ENCODER_MSPINIT_CB_ID :
+      htim->Encoder_MspInitCallback      = pCallback;
+      break;
+
+    case HAL_TIM_ENCODER_MSPDEINIT_CB_ID :
+      htim->Encoder_MspDeInitCallback    = pCallback;
+      break;
+
+    case HAL_TIM_HALL_SENSOR_MSPINIT_CB_ID :
+      htim->HallSensor_MspInitCallback   = pCallback;
+      break;
+
+    case HAL_TIM_HALL_SENSOR_MSPDEINIT_CB_ID :
+      htim->HallSensor_MspDeInitCallback = pCallback;
+      break;
+
+    case HAL_TIM_PERIOD_ELAPSED_CB_ID :
+      htim->PeriodElapsedCallback        = pCallback;
+      break;
+
+    case HAL_TIM_TRIGGER_CB_ID :
+      htim->TriggerCallback              = pCallback;
+      break;
+
+    case HAL_TIM_IC_CAPTURE_CB_ID :
+      htim->IC_CaptureCallback           = pCallback;
+      break;
+
+    case HAL_TIM_OC_DELAY_ELAPSED_CB_ID :
+      htim->OC_DelayElapsedCallback      = pCallback;
+      break;
+
+    case HAL_TIM_PWM_PULSE_FINISHED_CB_ID :
+      htim->PWM_PulseFinishedCallback    = pCallback;
+      break;
+
+    case HAL_TIM_ERROR_CB_ID :
+      htim->ErrorCallback                = pCallback;
+      break;
+
+    case HAL_TIM_COMMUTATION_CB_ID :
+      htim->CommutationCallback          = pCallback;
+      break;
+
+    case HAL_TIM_BREAK_CB_ID :
+      htim->BreakCallback                = pCallback;
+      break;
+
+    default :
+      /* Return error status */
+      status =  HAL_ERROR;
+      break;
+    }
+  }
+  else if(htim->State == HAL_TIM_STATE_RESET)
+  {
+    switch (CallbackID)
+    {
+    case HAL_TIM_BASE_MSPINIT_CB_ID :
+      htim->Base_MspInitCallback         = pCallback;
+      break;
+
+    case HAL_TIM_BASE_MSPDEINIT_CB_ID :
+      htim->Base_MspDeInitCallback       = pCallback;
+      break;
+
+    case HAL_TIM_IC_MSPINIT_CB_ID :
+      htim->IC_MspInitCallback           = pCallback;
+      break;
+
+    case HAL_TIM_IC_MSPDEINIT_CB_ID :
+      htim->IC_MspDeInitCallback         = pCallback;
+      break;
+
+    case HAL_TIM_OC_MSPINIT_CB_ID :
+      htim->OC_MspInitCallback           = pCallback;
+      break;
+
+    case HAL_TIM_OC_MSPDEINIT_CB_ID :
+      htim->OC_MspDeInitCallback         = pCallback;
+      break;
+
+    case HAL_TIM_PWM_MSPINIT_CB_ID :
+      htim->PWM_MspInitCallback          = pCallback;
+      break;
+
+    case HAL_TIM_PWM_MSPDEINIT_CB_ID :
+      htim->PWM_MspDeInitCallback        = pCallback;
+      break;
+
+    case HAL_TIM_ONE_PULSE_MSPINIT_CB_ID :
+      htim->OnePulse_MspInitCallback     = pCallback;
+      break;
+
+    case HAL_TIM_ONE_PULSE_MSPDEINIT_CB_ID :
+      htim->OnePulse_MspDeInitCallback   = pCallback;
+      break;
+
+    case HAL_TIM_ENCODER_MSPINIT_CB_ID :
+      htim->Encoder_MspInitCallback      = pCallback;
+      break;
+
+    case HAL_TIM_ENCODER_MSPDEINIT_CB_ID :
+      htim->Encoder_MspDeInitCallback    = pCallback;
+      break;
+
+    case HAL_TIM_HALL_SENSOR_MSPINIT_CB_ID :
+      htim->HallSensor_MspInitCallback   = pCallback;
+      break;
+
+    case HAL_TIM_HALL_SENSOR_MSPDEINIT_CB_ID :
+      htim->HallSensor_MspDeInitCallback = pCallback;
+      break;
+
+    default :
+      /* Return error status */
+      status =  HAL_ERROR;
+      break;
+    }
+  }
+  else
+  {
+    /* Return error status */
+    status =  HAL_ERROR;
+  }
+
+  /* Release Lock */
+  __HAL_UNLOCK(htim);
+
+  return status;
+}
+
+/**
+  * @brief  Unregister a TIM callback
+  *         TIM callback is redirected to the weak predefined callback
+  * @param htim tim handle
+  * @param CallbackID ID of the callback to be unregistered
+  *        This parameter can be one of the following values:
+  *          @arg @ref HAL_TIM_BASE_MSPINIT_CB_ID Base MspInit Callback ID
+  *          @arg @ref HAL_TIM_BASE_MSPDEINIT_CB_ID Base MspDeInit Callback ID
+  *          @arg @ref HAL_TIM_IC_MSPINIT_CB_ID IC MspInit Callback ID
+  *          @arg @ref HAL_TIM_IC_MSPDEINIT_CB_ID IC MspDeInit Callback ID
+  *          @arg @ref HAL_TIM_OC_MSPINIT_CB_ID OC MspInit Callback ID
+  *          @arg @ref HAL_TIM_OC_MSPDEINIT_CB_ID OC MspDeInit Callback ID
+  *          @arg @ref HAL_TIM_PWM_MSPINIT_CB_ID PWM MspInit Callback ID
+  *          @arg @ref HAL_TIM_PWM_MSPDEINIT_CB_ID PWM MspDeInit Callback ID
+  *          @arg @ref HAL_TIM_ONE_PULSE_MSPINIT_CB_ID One Pulse MspInit Callback ID
+  *          @arg @ref HAL_TIM_ONE_PULSE_MSPDEINIT_CB_ID One Pulse MspDeInit Callback ID
+  *          @arg @ref HAL_TIM_ENCODER_MSPINIT_CB_ID Encoder MspInit Callback ID
+  *          @arg @ref HAL_TIM_ENCODER_MSPDEINIT_CB_ID Encoder MspDeInit Callback ID
+  *          @arg @ref HAL_TIM_HALL_SENSOR_MSPINIT_CB_ID Hall Sensor MspInit Callback ID
+  *          @arg @ref HAL_TIM_HALL_SENSOR_MSPDEINIT_CB_ID Hall Sensor MspDeInit Callback ID
+  *          @arg @ref HAL_TIM_PERIOD_ELAPSED_CB_ID Period Elapsed Callback ID
+  *          @arg @ref HAL_TIM_TRIGGER_CB_ID Trigger Callback ID
+  *          @arg @ref HAL_TIM_IC_CAPTURE_CB_ID Input Capture Callback ID
+  *          @arg @ref HAL_TIM_OC_DELAY_ELAPSED_CB_ID Output Compare Delay Elapsed Callback ID
+  *          @arg @ref HAL_TIM_PWM_PULSE_FINISHED_CB_ID PWM Pulse Finished Callback ID
+  *          @arg @ref HAL_TIM_ERROR_CB_ID Error Callback ID
+  *          @arg @ref HAL_TIM_COMMUTATION_CB_ID Commutation Callback ID
+  *          @arg @ref HAL_TIM_BREAK_CB_ID Break Callback ID
+  * @retval status
+  */
+HAL_StatusTypeDef HAL_TIM_UnRegisterCallback(TIM_HandleTypeDef *htim, HAL_TIM_CallbackIDTypeDef CallbackID)
+{
+  HAL_StatusTypeDef status = HAL_OK;
+
+  /* Process locked */
+  __HAL_LOCK(htim);
+
+  if(htim->State == HAL_TIM_STATE_READY)
+  {
+    switch (CallbackID)
+    {
+    case HAL_TIM_BASE_MSPINIT_CB_ID :
+      htim->Base_MspInitCallback         = HAL_TIM_Base_MspInit;              /* Legacy weak Base MspInit Callback */
+      break;
+
+    case HAL_TIM_BASE_MSPDEINIT_CB_ID :
+      htim->Base_MspDeInitCallback       = HAL_TIM_Base_MspDeInit;            /* Legacy weak Base Msp DeInit Callback */
+      break;
+
+    case HAL_TIM_IC_MSPINIT_CB_ID :
+      htim->IC_MspInitCallback           = HAL_TIM_IC_MspInit;                /* Legacy weak IC Msp Init Callback */
+      break;
+
+    case HAL_TIM_IC_MSPDEINIT_CB_ID :
+      htim->IC_MspDeInitCallback         = HAL_TIM_IC_MspDeInit;              /* Legacy weak IC Msp DeInit Callback */
+      break;
+
+    case HAL_TIM_OC_MSPINIT_CB_ID :
+      htim->OC_MspInitCallback           = HAL_TIM_OC_MspInit;                /* Legacy weak OC Msp Init Callback */
+      break;
+
+    case HAL_TIM_OC_MSPDEINIT_CB_ID :
+      htim->OC_MspDeInitCallback         = HAL_TIM_OC_MspDeInit;              /* Legacy weak OC Msp DeInit Callback */
+      break;
+
+    case HAL_TIM_PWM_MSPINIT_CB_ID :
+      htim->PWM_MspInitCallback          = HAL_TIM_PWM_MspInit;               /* Legacy weak PWM Msp Init Callback */
+      break;
+
+    case HAL_TIM_PWM_MSPDEINIT_CB_ID :
+      htim->PWM_MspDeInitCallback        = HAL_TIM_PWM_MspDeInit;             /* Legacy weak PWM Msp DeInit Callback */
+      break;
+
+    case HAL_TIM_ONE_PULSE_MSPINIT_CB_ID :
+      htim->OnePulse_MspInitCallback     = HAL_TIM_OnePulse_MspInit;          /* Legacy weak One Pulse Msp Init Callback */
+      break;
+
+    case HAL_TIM_ONE_PULSE_MSPDEINIT_CB_ID :
+      htim->OnePulse_MspDeInitCallback   = HAL_TIM_OnePulse_MspDeInit;        /* Legacy weak One Pulse Msp DeInit Callback */
+      break;
+
+    case HAL_TIM_ENCODER_MSPINIT_CB_ID :
+      htim->Encoder_MspInitCallback      = HAL_TIM_Encoder_MspInit;           /* Legacy weak Encoder Msp Init Callback */
+      break;
+
+    case HAL_TIM_ENCODER_MSPDEINIT_CB_ID :
+      htim->Encoder_MspDeInitCallback    = HAL_TIM_Encoder_MspDeInit;         /* Legacy weak Encoder Msp DeInit Callback */
+      break;
+
+    case HAL_TIM_HALL_SENSOR_MSPINIT_CB_ID :
+      htim->HallSensor_MspInitCallback   = HAL_TIMEx_HallSensor_MspInit;      /* Legacy weak Hall Sensor Msp Init Callback */
+      break;
+
+    case HAL_TIM_HALL_SENSOR_MSPDEINIT_CB_ID :
+      htim->HallSensor_MspDeInitCallback = HAL_TIMEx_HallSensor_MspDeInit;    /* Legacy weak Hall Sensor Msp DeInit Callback */
+      break;
+
+    case HAL_TIM_PERIOD_ELAPSED_CB_ID :
+      htim->PeriodElapsedCallback        = HAL_TIM_PeriodElapsedCallback;     /* Legacy weak Period Elapsed Callback */
+      break;
+
+    case HAL_TIM_TRIGGER_CB_ID :
+      htim->TriggerCallback              = HAL_TIM_TriggerCallback;           /* Legacy weak Trigger Callback */
+      break;
+
+    case HAL_TIM_IC_CAPTURE_CB_ID :
+      htim->IC_CaptureCallback           = HAL_TIM_IC_CaptureCallback;        /* Legacy weak IC Capture Callback */
+      break;
+
+    case HAL_TIM_OC_DELAY_ELAPSED_CB_ID :
+      htim->OC_DelayElapsedCallback      = HAL_TIM_OC_DelayElapsedCallback;   /* Legacy weak OC Delay Elapsed Callback */
+      break;
+
+    case HAL_TIM_PWM_PULSE_FINISHED_CB_ID :
+      htim->PWM_PulseFinishedCallback    = HAL_TIM_PWM_PulseFinishedCallback; /* Legacy weak PWM Pulse Finished Callback */
+      break;
+
+    case HAL_TIM_ERROR_CB_ID :
+      htim->ErrorCallback                = HAL_TIM_ErrorCallback;             /* Legacy weak Error Callback */
+      break;
+
+    case HAL_TIM_COMMUTATION_CB_ID :
+      htim->CommutationCallback          = HAL_TIMEx_CommutationCallback;     /* Legacy weak Commutation Callback */
+      break;
+
+    case HAL_TIM_BREAK_CB_ID :
+      htim->BreakCallback                = HAL_TIMEx_BreakCallback;           /* Legacy weak Break Callback */
+      break;
+
+    default :
+     /* Return error status */
+      status =  HAL_ERROR;
+      break;
+    }
+  }
+  else if(htim->State == HAL_TIM_STATE_RESET)
+  {
+    switch (CallbackID)
+    {
+    case HAL_TIM_BASE_MSPINIT_CB_ID :
+      htim->Base_MspInitCallback         = HAL_TIM_Base_MspInit;              /* Legacy weak Base MspInit Callback */
+      break;
+
+    case HAL_TIM_BASE_MSPDEINIT_CB_ID :
+      htim->Base_MspDeInitCallback       = HAL_TIM_Base_MspDeInit;            /* Legacy weak Base Msp DeInit Callback */
+      break;
+
+    case HAL_TIM_IC_MSPINIT_CB_ID :
+      htim->IC_MspInitCallback           = HAL_TIM_IC_MspInit;                /* Legacy weak IC Msp Init Callback */
+      break;
+
+    case HAL_TIM_IC_MSPDEINIT_CB_ID :
+      htim->IC_MspDeInitCallback         = HAL_TIM_IC_MspDeInit;              /* Legacy weak IC Msp DeInit Callback */
+      break;
+
+    case HAL_TIM_OC_MSPINIT_CB_ID :
+      htim->OC_MspInitCallback           = HAL_TIM_OC_MspInit;                /* Legacy weak OC Msp Init Callback */
+      break;
+
+    case HAL_TIM_OC_MSPDEINIT_CB_ID :
+      htim->OC_MspDeInitCallback         = HAL_TIM_OC_MspDeInit;              /* Legacy weak OC Msp DeInit Callback */
+      break;
+
+    case HAL_TIM_PWM_MSPINIT_CB_ID :
+      htim->PWM_MspInitCallback          = HAL_TIM_PWM_MspInit;               /* Legacy weak PWM Msp Init Callback */
+      break;
+
+    case HAL_TIM_PWM_MSPDEINIT_CB_ID :
+      htim->PWM_MspDeInitCallback        = HAL_TIM_PWM_MspDeInit;             /* Legacy weak PWM Msp DeInit Callback */
+      break;
+
+    case HAL_TIM_ONE_PULSE_MSPINIT_CB_ID :
+      htim->OnePulse_MspInitCallback     = HAL_TIM_OnePulse_MspInit;          /* Legacy weak One Pulse Msp Init Callback */
+      break;
+
+    case HAL_TIM_ONE_PULSE_MSPDEINIT_CB_ID :
+      htim->OnePulse_MspDeInitCallback   = HAL_TIM_OnePulse_MspDeInit;        /* Legacy weak One Pulse Msp DeInit Callback */
+      break;
+
+    case HAL_TIM_ENCODER_MSPINIT_CB_ID :
+      htim->Encoder_MspInitCallback      = HAL_TIM_Encoder_MspInit;           /* Legacy weak Encoder Msp Init Callback */
+      break;
+
+    case HAL_TIM_ENCODER_MSPDEINIT_CB_ID :
+      htim->Encoder_MspDeInitCallback    = HAL_TIM_Encoder_MspDeInit;         /* Legacy weak Encoder Msp DeInit Callback */
+      break;
+
+    case HAL_TIM_HALL_SENSOR_MSPINIT_CB_ID :
+      htim->HallSensor_MspInitCallback   = HAL_TIMEx_HallSensor_MspInit;      /* Legacy weak Hall Sensor Msp Init Callback */
+      break;
+
+    case HAL_TIM_HALL_SENSOR_MSPDEINIT_CB_ID :
+      htim->HallSensor_MspDeInitCallback = HAL_TIMEx_HallSensor_MspDeInit;    /* Legacy weak Hall Sensor Msp DeInit Callback */
+      break;
+
+    default :
+     /* Return error status */
+      status =  HAL_ERROR;
+      break;
+    }
+  }
+  else
+  {
+    /* Return error status */
+    status =  HAL_ERROR;
+  }
+
+  /* Release Lock */
+  __HAL_UNLOCK(htim);
+
+  return status;
+}
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
 
 /**
   * @}
@@ -4617,8 +5307,11 @@ void HAL_TIM_DMAError(DMA_HandleTypeDef *hdma)
   TIM_HandleTypeDef* htim = ( TIM_HandleTypeDef* )((DMA_HandleTypeDef* )hdma)->Parent;
   
   htim->State= HAL_TIM_STATE_READY;
-   
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+   htim->ErrorCallback(htim);
+#else
   HAL_TIM_ErrorCallback(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
 }
 
 /**
@@ -4650,8 +5343,11 @@ void HAL_TIM_DMADelayPulseCplt(DMA_HandleTypeDef *hdma)
     htim->Channel = HAL_TIM_ACTIVE_CHANNEL_4;
   }
 
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+  htim->PWM_PulseFinishedCallback(htim);
+#else
   HAL_TIM_PWM_PulseFinishedCallback(htim);
-
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
   htim->Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
 }
 /**
@@ -4682,9 +5378,11 @@ void HAL_TIM_DMACaptureCplt(DMA_HandleTypeDef *hdma)
   {
     htim->Channel = HAL_TIM_ACTIVE_CHANNEL_4;
   }
-  
-  HAL_TIM_IC_CaptureCallback(htim); 
-  
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+  htim->IC_CaptureCallback(htim);
+#else
+  HAL_TIM_IC_CaptureCallback(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
   htim->Channel = HAL_TIM_ACTIVE_CHANNEL_CLEARED;
 
 }
@@ -4698,10 +5396,13 @@ void HAL_TIM_DMACaptureCplt(DMA_HandleTypeDef *hdma)
 static void TIM_DMAPeriodElapsedCplt(DMA_HandleTypeDef *hdma)
 {
   TIM_HandleTypeDef* htim = ( TIM_HandleTypeDef* )((DMA_HandleTypeDef* )hdma)->Parent;
-  
+
   htim->State= HAL_TIM_STATE_READY;
-  
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+  htim->PeriodElapsedCallback(htim);
+#else
   HAL_TIM_PeriodElapsedCallback(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
 }
 
 /**
@@ -4715,8 +5416,11 @@ static void TIM_DMATriggerCplt(DMA_HandleTypeDef *hdma)
   TIM_HandleTypeDef* htim = ( TIM_HandleTypeDef* )((DMA_HandleTypeDef* )hdma)->Parent;  
   
   htim->State= HAL_TIM_STATE_READY; 
-  
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+  htim->TriggerCallback(htim);
+#else
   HAL_TIM_TriggerCallback(htim);
+ #endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
 }
 
 /**
@@ -5516,7 +6220,26 @@ void TIM_CCxChannelCmd(TIM_TypeDef* TIMx, uint32_t Channel, uint32_t ChannelStat
   TIMx->CCER |= (uint32_t)(ChannelState << Channel);
 }
 
-
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+/**
+  * @brief  Reset interrupt callbacks to the legacy week callbacks.
+  * @param  htim pointer to a TIM_HandleTypeDef structure that contains
+  *                the configuration information for TIM module.
+  * @retval None
+  */
+void TIM_ResetCallback(TIM_HandleTypeDef *htim)
+{
+  /* Reset the TIM callback to the legacy weak callbacks */
+  htim->PeriodElapsedCallback     = HAL_TIM_PeriodElapsedCallback;     /* Legacy weak PeriodElapsedCallback     */
+  htim->TriggerCallback           = HAL_TIM_TriggerCallback;           /* Legacy weak TriggerCallback           */
+  htim->IC_CaptureCallback        = HAL_TIM_IC_CaptureCallback;        /* Legacy weak IC_CaptureCallback        */
+  htim->OC_DelayElapsedCallback   = HAL_TIM_OC_DelayElapsedCallback;   /* Legacy weak OC_DelayElapsedCallback   */
+  htim->PWM_PulseFinishedCallback = HAL_TIM_PWM_PulseFinishedCallback; /* Legacy weak PWM_PulseFinishedCallback */
+  htim->ErrorCallback             = HAL_TIM_ErrorCallback;             /* Legacy weak ErrorCallback             */
+  htim->CommutationCallback       = HAL_TIMEx_CommutationCallback;     /* Legacy weak CommutationCallback       */
+  htim->BreakCallback             = HAL_TIMEx_BreakCallback;           /* Legacy weak BreakCallback             */
+}
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
 /**
   * @}
   */

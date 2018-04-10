@@ -179,12 +179,30 @@ HAL_StatusTypeDef HAL_TIMEx_HallSensor_Init(TIM_HandleTypeDef *htim, TIM_HallSen
   assert_param(IS_TIM_IC_PRESCALER(sConfig->IC1Prescaler));
   assert_param(IS_TIM_IC_FILTER(sConfig->IC1Filter));
 
+  if(htim->State == HAL_TIM_STATE_RESET)
+  {
+    /* Allocate lock resource and initialize it */
+    htim->Lock = HAL_UNLOCKED;
+
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+    /* Reset interrupt callbacks to legacy week callbacks */
+    TIM_ResetCallback(htim);
+
+    if(htim->HallSensor_MspInitCallback == NULL)
+    {
+      htim->HallSensor_MspInitCallback = HAL_TIMEx_HallSensor_MspInit;
+    }
+    /* Init the low level hardware : GPIO, CLOCK, NVIC */
+    htim->HallSensor_MspInitCallback(htim);
+#else
+    /* Init the low level hardware : GPIO, CLOCK, NVIC and DMA */
+    HAL_TIMEx_HallSensor_MspInit(htim);
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
+  }
+
   /* Set the TIM state */
   htim->State= HAL_TIM_STATE_BUSY;
-  
-  /* Init the low level hardware : GPIO, CLOCK, NVIC and DMA */
-  HAL_TIMEx_HallSensor_MspInit(htim);
-  
+
   /* Configure the Time base in the Encoder Mode */
   TIM_Base_SetConfig(htim->Instance, &htim->Init);
   
@@ -244,10 +262,19 @@ HAL_StatusTypeDef HAL_TIMEx_HallSensor_DeInit(TIM_HandleTypeDef *htim)
   
   /* Disable the TIM Peripheral Clock */
   __HAL_TIM_DISABLE(htim);
-    
+
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+  if(htim->HallSensor_MspDeInitCallback == NULL)
+  {
+    htim->HallSensor_MspDeInitCallback = HAL_TIMEx_HallSensor_MspDeInit;
+  }
+  /* DeInit the low level hardware */
+  htim->HallSensor_MspDeInitCallback(htim);
+#else
   /* DeInit the low level hardware: GPIO, CLOCK, NVIC */
   HAL_TIMEx_HallSensor_MspDeInit(htim);
-    
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
+
   /* Change TIM state */  
   htim->State = HAL_TIM_STATE_RESET; 
 
@@ -2016,8 +2043,12 @@ void HAL_TIMEx_DMACommutationCplt(DMA_HandleTypeDef *hdma)
   TIM_HandleTypeDef* htim = ( TIM_HandleTypeDef* )((DMA_HandleTypeDef* )hdma)->Parent;
   
   htim->State= HAL_TIM_STATE_READY;
-    
+
+#if (USE_HAL_TIM_REGISTER_CALLBACKS == 1)
+  htim->CommutationCallback(htim);
+#else
   HAL_TIMEx_CommutationCallback(htim); 
+#endif /* USE_HAL_TIM_REGISTER_CALLBACKS */
 }
 /**
   * @}

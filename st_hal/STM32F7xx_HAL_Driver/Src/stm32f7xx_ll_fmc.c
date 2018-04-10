@@ -987,7 +987,6 @@ HAL_StatusTypeDef FMC_SDRAM_WriteProtection_Disable(FMC_SDRAM_TypeDef *Device, u
 HAL_StatusTypeDef FMC_SDRAM_SendCommand(FMC_SDRAM_TypeDef *Device, FMC_SDRAM_CommandTypeDef *Command, uint32_t Timeout)
 {
   __IO uint32_t tmpr = 0;
-  uint32_t tickstart = 0;
   
   /* Check the parameters */
   assert_param(IS_FMC_SDRAM_DEVICE(Device));
@@ -1004,22 +1003,6 @@ HAL_StatusTypeDef FMC_SDRAM_SendCommand(FMC_SDRAM_TypeDef *Device, FMC_SDRAM_Com
                     );
     
   Device->SDCMR = tmpr;
-
-  /* Get tick */ 
-  tickstart = HAL_GetTick();
-
-  /* wait until command is send */
-  while(HAL_IS_BIT_SET(Device->SDSR, FMC_SDSR_BUSY))
-  {
-    /* Check for the Timeout */
-    if(Timeout != HAL_MAX_DELAY)
-    {
-      if((Timeout == 0)||((HAL_GetTick() - tickstart ) > Timeout))
-      {
-        return HAL_TIMEOUT;
-      }
-    }     
-  }
   
   return HAL_OK;  
 }

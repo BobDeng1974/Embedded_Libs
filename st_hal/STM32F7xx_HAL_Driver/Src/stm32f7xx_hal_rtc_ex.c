@@ -273,7 +273,7 @@ HAL_StatusTypeDef HAL_RTCEx_SetTimeStamp_IT(RTC_HandleTypeDef *hrtc, uint32_t Ti
   */
 HAL_StatusTypeDef HAL_RTCEx_DeactivateTimeStamp(RTC_HandleTypeDef *hrtc)
 {
-  uint32_t tmpreg = 0;
+  uint32_t tmpreg = 0U;
   
   /* Process Locked */ 
   __HAL_LOCK(hrtc);
@@ -379,7 +379,7 @@ HAL_StatusTypeDef HAL_RTCEx_DeactivateInternalTimeStamp(RTC_HandleTypeDef *hrtc)
   */
 HAL_StatusTypeDef HAL_RTCEx_GetTimeStamp(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDef* sTimeStamp, RTC_DateTypeDef* sTimeStampDate, uint32_t Format)
 {
-  uint32_t tmptime = 0, tmpdate = 0;
+  uint32_t tmptime = 0U, tmpdate = 0U;
 
   /* Check the parameters */
   assert_param(IS_RTC_FORMAT(Format));
@@ -389,17 +389,17 @@ HAL_StatusTypeDef HAL_RTCEx_GetTimeStamp(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDe
   tmpdate = (uint32_t)(hrtc->Instance->TSDR & RTC_DR_RESERVED_MASK);
 
   /* Fill the Time structure fields with the read parameters */
-  sTimeStamp->Hours = (uint8_t)((tmptime & (RTC_TR_HT | RTC_TR_HU)) >> 16);
-  sTimeStamp->Minutes = (uint8_t)((tmptime & (RTC_TR_MNT | RTC_TR_MNU)) >> 8);
+  sTimeStamp->Hours = (uint8_t)((tmptime & (RTC_TR_HT | RTC_TR_HU)) >> 16U);
+  sTimeStamp->Minutes = (uint8_t)((tmptime & (RTC_TR_MNT | RTC_TR_MNU)) >> 8U);
   sTimeStamp->Seconds = (uint8_t)(tmptime & (RTC_TR_ST | RTC_TR_SU));
-  sTimeStamp->TimeFormat = (uint8_t)((tmptime & (RTC_TR_PM)) >> 16);  
+  sTimeStamp->TimeFormat = (uint8_t)((tmptime & (RTC_TR_PM)) >> 16U);  
   sTimeStamp->SubSeconds = (uint32_t) hrtc->Instance->TSSSR;
   
   /* Fill the Date structure fields with the read parameters */
-  sTimeStampDate->Year = 0;
-  sTimeStampDate->Month = (uint8_t)((tmpdate & (RTC_DR_MT | RTC_DR_MU)) >> 8);
+  sTimeStampDate->Year = 0U;
+  sTimeStampDate->Month = (uint8_t)((tmpdate & (RTC_DR_MT | RTC_DR_MU)) >> 8U);
   sTimeStampDate->Date = (uint8_t)(tmpdate & (RTC_DR_DT | RTC_DR_DU));
-  sTimeStampDate->WeekDay = (uint8_t)((tmpdate & (RTC_DR_WDU)) >> 13);
+  sTimeStampDate->WeekDay = (uint8_t)((tmpdate & (RTC_DR_WDU)) >> 13U);
 
   /* Check the input parameters format */
   if(Format == RTC_FORMAT_BIN)
@@ -431,7 +431,7 @@ HAL_StatusTypeDef HAL_RTCEx_GetTimeStamp(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDe
   */
 HAL_StatusTypeDef HAL_RTCEx_SetTamper(RTC_HandleTypeDef *hrtc, RTC_TamperTypeDef* sTamper)
 {
-  uint32_t tmpreg = 0;
+  uint32_t tmpreg = 0U;
   
   /* Check the parameters */
   assert_param(IS_RTC_TAMPER(sTamper->Tamper)); 
@@ -451,21 +451,21 @@ HAL_StatusTypeDef HAL_RTCEx_SetTamper(RTC_HandleTypeDef *hrtc, RTC_TamperTypeDef
 
   if(sTamper->Trigger != RTC_TAMPERTRIGGER_RISINGEDGE)
   { 
-    sTamper->Trigger = (uint32_t)(sTamper->Tamper << 1); 
+    sTamper->Trigger = (uint32_t)(sTamper->Tamper << 1U); 
   } 
   
   if(sTamper->NoErase != RTC_TAMPER_ERASE_BACKUP_ENABLE)
   { 
     sTamper->NoErase = 0;
-    if((sTamper->Tamper & RTC_TAMPER_1) != 0)
+    if((sTamper->Tamper & RTC_TAMPER_1) != 0U)
     {
       sTamper->NoErase |= RTC_TAMPCR_TAMP1NOERASE;
     }
-    if((sTamper->Tamper & RTC_TAMPER_2) != 0)
+    if((sTamper->Tamper & RTC_TAMPER_2) != 0U)
     {
       sTamper->NoErase |= RTC_TAMPCR_TAMP2NOERASE;
     }
-    if((sTamper->Tamper & RTC_TAMPER_3) != 0)
+    if((sTamper->Tamper & RTC_TAMPER_3) != 0U)
     {
       sTamper->NoErase |= RTC_TAMPCR_TAMP3NOERASE;
     }
@@ -474,15 +474,15 @@ HAL_StatusTypeDef HAL_RTCEx_SetTamper(RTC_HandleTypeDef *hrtc, RTC_TamperTypeDef
   if(sTamper->MaskFlag != RTC_TAMPERMASK_FLAG_DISABLE)
   {
     sTamper->MaskFlag = 0;
-    if((sTamper->Tamper & RTC_TAMPER_1) != 0)
+    if((sTamper->Tamper & RTC_TAMPER_1) != 0U)
     {
       sTamper->MaskFlag |= RTC_TAMPCR_TAMP1MF;
     }
-    if((sTamper->Tamper & RTC_TAMPER_2) != 0)
+    if((sTamper->Tamper & RTC_TAMPER_2) != 0U)
     {
       sTamper->MaskFlag |= RTC_TAMPCR_TAMP2MF;
     }
-    if((sTamper->Tamper & RTC_TAMPER_3) != 0)
+    if((sTamper->Tamper & RTC_TAMPER_3) != 0U)
     {
       sTamper->MaskFlag |= RTC_TAMPCR_TAMP3MF;
     }
@@ -852,7 +852,7 @@ HAL_StatusTypeDef HAL_RTCEx_PollForTimeStampEvent(RTC_HandleTypeDef *hrtc, uint3
   */
 HAL_StatusTypeDef HAL_RTCEx_PollForTamper1Event(RTC_HandleTypeDef *hrtc, uint32_t Timeout)
 {  
-  uint32_t tickstart = 0; 
+  uint32_t tickstart = 0U; 
 
   /* Get tick */
   tickstart = HAL_GetTick();
@@ -862,7 +862,7 @@ HAL_StatusTypeDef HAL_RTCEx_PollForTamper1Event(RTC_HandleTypeDef *hrtc, uint32_
   {
     if(Timeout != HAL_MAX_DELAY)
     {
-      if((Timeout == 0)||((HAL_GetTick() - tickstart ) > Timeout))
+      if((Timeout == 0U)||((HAL_GetTick() - tickstart ) > Timeout))
       {
         hrtc->State = HAL_RTC_STATE_TIMEOUT;
         return HAL_TIMEOUT;
@@ -1048,8 +1048,8 @@ HAL_StatusTypeDef HAL_RTCEx_SetWakeUpTimer(RTC_HandleTypeDef *hrtc, uint32_t Wak
   */
 HAL_StatusTypeDef HAL_RTCEx_SetWakeUpTimer_IT(RTC_HandleTypeDef *hrtc, uint32_t WakeUpCounter, uint32_t WakeUpClock)
 {
-  uint32_t tickstart = 0;
-  
+  __IO uint32_t count;
+
   /* Check the parameters */
   assert_param(IS_RTC_WAKEUP_CLOCK(WakeUpClock));
   assert_param(IS_RTC_WAKEUP_COUNTER(WakeUpCounter));
@@ -1064,31 +1064,51 @@ HAL_StatusTypeDef HAL_RTCEx_SetWakeUpTimer_IT(RTC_HandleTypeDef *hrtc, uint32_t 
   
   __HAL_RTC_WAKEUPTIMER_DISABLE(hrtc);
 
-  /* Get tick */
-  tickstart = HAL_GetTick();
-
-    /*Check RTC WUTWF flag is reset only when wake up timer enabled*/
+  /* Check RTC WUTWF flag is reset only when wake up timer enabled */
   if((hrtc->Instance->CR & RTC_CR_WUTE) != RESET)
   {
-    /* Wait till RTC WUTWF flag is set and if Time out is reached exit */
-    while(__HAL_RTC_WAKEUPTIMER_GET_FLAG(hrtc, RTC_FLAG_WUTWF) == RESET)
+    /* Wait till RTC WUTWF flag is reset and if Time out is reached exit */
+    count = RTC_TIMEOUT_VALUE  * (SystemCoreClock / 32U / 1000U);
+    do
     {
-      if((HAL_GetTick() - tickstart ) > RTC_TIMEOUT_VALUE)
+      if(count-- == 0U)
       {
         /* Enable the write protection for RTC registers */
         __HAL_RTC_WRITEPROTECTION_ENABLE(hrtc);
-       
-        hrtc->State = HAL_RTC_STATE_TIMEOUT; 
-      
-        /* Process Unlocked */ 
+
+        hrtc->State = HAL_RTC_STATE_TIMEOUT;
+
+        /* Process Unlocked */
         __HAL_UNLOCK(hrtc);
-      
+
         return HAL_TIMEOUT;
-      }  
+      }
+    }
+    while(__HAL_RTC_WAKEUPTIMER_GET_FLAG(hrtc, RTC_FLAG_WUTWF) == SET);
+  }
+
+  __HAL_RTC_WAKEUPTIMER_DISABLE(hrtc);
+
+  /* Wait till RTC WUTWF flag is set and if Time out is reached exit */
+  count = RTC_TIMEOUT_VALUE  * (SystemCoreClock / 32U / 1000U);
+  do
+  {
+    if(count-- == 0U)
+    {
+      /* Enable the write protection for RTC registers */
+      __HAL_RTC_WRITEPROTECTION_ENABLE(hrtc);
+
+      hrtc->State = HAL_RTC_STATE_TIMEOUT;
+
+      /* Process Unlocked */
+      __HAL_UNLOCK(hrtc);
+
+      return HAL_TIMEOUT;
     }
   }
-  
-  /* Configure the Wakeup Timer counter */
+  while(__HAL_RTC_WAKEUPTIMER_GET_FLAG(hrtc, RTC_FLAG_WUTWF) == RESET);
+        
+  /* Configure the Wake-up Timer counter */
   hrtc->Instance->WUTR = (uint32_t)WakeUpCounter;
 
   /* Clear the Wakeup Timer clock source bits in CR register */
@@ -1130,7 +1150,7 @@ HAL_StatusTypeDef HAL_RTCEx_SetWakeUpTimer_IT(RTC_HandleTypeDef *hrtc, uint32_t 
   */
 uint32_t HAL_RTCEx_DeactivateWakeUpTimer(RTC_HandleTypeDef *hrtc)
 {
-  uint32_t tickstart = 0;
+  uint32_t tickstart = 0U;
   
   /* Process Locked */ 
   __HAL_LOCK(hrtc);
