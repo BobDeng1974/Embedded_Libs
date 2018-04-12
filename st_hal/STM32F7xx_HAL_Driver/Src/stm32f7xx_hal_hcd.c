@@ -586,8 +586,6 @@ __weak void HAL_HCD_Disconnect_Callback(HCD_HandleTypeDef *hhcd)
 }
 
 /**
-<<<<<<< master
-=======
   * @brief  Port Enabled  Event callback.
   * @param  hhcd: HCD handle
   * @retval None
@@ -616,7 +614,6 @@ __weak void HAL_HCD_PortDisabled_Callback(HCD_HandleTypeDef *hhcd)
 }
 
 /**
->>>>>>> local
   * @brief  Notify URB state change callback.
   * @param  hhcd HCD handle
   * @param  chnum Channel number.
@@ -948,15 +945,8 @@ static void HCD_HC_IN_IRQHandler   (HCD_HandleTypeDef *hhcd, uint8_t chnum)
     if(hhcd->hc[chnum].ep_type == EP_TYPE_INTR)
     {
        hhcd->hc[chnum].ErrCnt = 0;
-<<<<<<< master
-       hhcd->hc[chnum].state = HC_NAK;
       __HAL_HCD_UNMASK_HALT_HC_INT(chnum);
       USB_HC_Halt(hhcd->Instance, chnum);
-
-=======
-      __HAL_HCD_UNMASK_HALT_HC_INT(chnum);
-      USB_HC_Halt(hhcd->Instance, chnum);
->>>>>>> local
     }
     else if ((hhcd->hc[chnum].ep_type == EP_TYPE_CTRL)||
              (hhcd->hc[chnum].ep_type == EP_TYPE_BULK))

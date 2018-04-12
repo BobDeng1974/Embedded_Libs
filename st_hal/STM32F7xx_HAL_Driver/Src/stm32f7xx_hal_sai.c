@@ -1049,10 +1049,7 @@ HAL_StatusTypeDef HAL_SAI_DMAStop(SAI_HandleTypeDef *hsai)
   /* Flush the fifo */
   SET_BIT(hsai->Instance->CR2, SAI_xCR2_FFLUSH);
 
-<<<<<<< master
-=======
   /* Set hsai state to ready */
->>>>>>> local
   hsai->State = HAL_SAI_STATE_READY;
 
   /* Process Unlocked */

@@ -66,19 +66,11 @@
   * @{
   */
 /**
-<<<<<<< master
- * @brief STM32F7xx HAL Driver version number V1.2.3
-   */
-#define __STM32F7xx_HAL_VERSION_MAIN   (0x01) /*!< [31:24] main version */
-#define __STM32F7xx_HAL_VERSION_SUB1   (0x02) /*!< [23:16] sub1 version */
-#define __STM32F7xx_HAL_VERSION_SUB2   (0x03) /*!< [15:8]  sub2 version */
-=======
  * @brief STM32F7xx HAL Driver version number V1.2.5
    */
 #define __STM32F7xx_HAL_VERSION_MAIN   (0x01) /*!< [31:24] main version */
 #define __STM32F7xx_HAL_VERSION_SUB1   (0x02) /*!< [23:16] sub1 version */
 #define __STM32F7xx_HAL_VERSION_SUB2   (0x05) /*!< [15:8]  sub2 version */
->>>>>>> local
 #define __STM32F7xx_HAL_VERSION_RC     (0x00) /*!< [7:0]  release candidate */ 
 #define __STM32F7xx_HAL_VERSION         ((__STM32F7xx_HAL_VERSION_MAIN << 24)\
                                         |(__STM32F7xx_HAL_VERSION_SUB1 << 16)\
@@ -261,22 +253,15 @@ __weak HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)
   }
 
   /* Configure the SysTick IRQ priority */
-<<<<<<< master
-  if ((HAL_GetTickPrio() != TickPriority) && (TickPriority < (1UL << __NVIC_PRIO_BITS)))
-=======
   if (TickPriority < (1UL << __NVIC_PRIO_BITS))
->>>>>>> local
   {
     HAL_NVIC_SetPriority(SysTick_IRQn, TickPriority, 0U);
     uwTickPrio = TickPriority;
   }
-<<<<<<< master
-=======
   else
   {
     return HAL_ERROR;
   }
->>>>>>> local
 
   /* Return function status */
   return HAL_OK;

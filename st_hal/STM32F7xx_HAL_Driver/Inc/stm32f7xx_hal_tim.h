@@ -1754,17 +1754,9 @@ HAL_TIM_StateTypeDef HAL_TIM_Encoder_GetState(TIM_HandleTypeDef *htim);
  ((__CHANNEL__) == TIM_CHANNEL_2) ? ((__HANDLE__)->Instance->CCER &= (uint16_t)~(TIM_CCER_CC2P | TIM_CCER_CC2NP)) :\
  ((__CHANNEL__) == TIM_CHANNEL_3) ? ((__HANDLE__)->Instance->CCER &= (uint16_t)~(TIM_CCER_CC3P | TIM_CCER_CC3NP)) :\
  ((__HANDLE__)->Instance->CCER &= (uint16_t)~TIM_CCER_CC4P))
-<<<<<<< master
 /**
   * @}
   */
-
-=======
->>>>>>> local
-/**
-  * @}
-  */
-/* End of private macros -----------------------------------------------------*/
 
 /**
   * @}

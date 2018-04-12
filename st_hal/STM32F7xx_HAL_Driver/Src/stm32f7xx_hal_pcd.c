@@ -1109,14 +1109,11 @@ HAL_StatusTypeDef HAL_PCD_EP_SetStall(PCD_HandleTypeDef *hpcd, uint8_t ep_addr)
 {
   USB_OTG_EPTypeDef *ep;
 
-<<<<<<< master
-=======
   if ((ep_addr & 0x0F) > hpcd->Init.dev_endpoints)
   {
     return HAL_ERROR;
   }
 
->>>>>>> local
   if ((0x80 & ep_addr) == 0x80)
   {
     ep = &hpcd->IN_ep[ep_addr & 0x7F];
@@ -1152,14 +1149,11 @@ HAL_StatusTypeDef HAL_PCD_EP_ClrStall(PCD_HandleTypeDef *hpcd, uint8_t ep_addr)
 {
   USB_OTG_EPTypeDef *ep;
 
-<<<<<<< master
-=======
   if ((ep_addr & 0x0F) > hpcd->Init.dev_endpoints)
   {
     return HAL_ERROR;
   }
 
->>>>>>> local
   if ((0x80 & ep_addr) == 0x80)
   {
     ep = &hpcd->IN_ep[ep_addr & 0x7F];
